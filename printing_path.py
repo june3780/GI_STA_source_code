@@ -78,9 +78,11 @@ def get_path_of_group(wire_mode,checking):
 
 
 def compare_with_scratch(dictionary,wire_mod,checking,color_number):
+    scratch_delay=list()
     for ivalue in dictionary:
         if ivalue=='scratch_detailed':
             scratch_delay=dictionary['scratch_detailed']
+
     
     tt=int()
     kk=int()
@@ -351,6 +353,7 @@ if __name__ == "__main__":
         get_other_path_of_delay(range_number,path_delays,searching,wire_mod,idx)
 
         scratch_delay=list_a1_rbank[0]
+        
         print()
         
     plt.legend()

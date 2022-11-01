@@ -1234,6 +1234,7 @@ if __name__ == "__main__":
     ffffile_name=def_name.split('.def')[0]+'_revised.def'
 
     file_address_name=get_file_address_function(def_name)
+
     if 'scratch' in arguments[1]:
         file_address_name=arguments[3]
 
@@ -1327,11 +1328,6 @@ if __name__ == "__main__":
     file_pathpath='../data/deflef_to_graph_and_verilog/results/'+file_address_name+'/test_7800_zfor_clk_'+wire_mode+'/'+file_name.split('_revised')[0]+'.json'
     with open(file_pathpath,'w') as f:
         json.dump(stage_All_clk,f,indent=4)
-    
-    print(arguments[1])
-    print(arguments[2])
-
-
 
 ##################################################################################################################################################
 
