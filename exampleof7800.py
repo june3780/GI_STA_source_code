@@ -8,13 +8,14 @@ import sys
 
 
 def get_file_and_make_directory(listlist,wiremode,file_type):
-    '''for idx in range(50):
-            os.mkdir('../data/deflef_to_graph_and_verilog/0. defs/a1_'+str(idx)+'bank.txt')
-            shutil.copyfile('../data/a1_bank_def/'+str(idx)+'bank.txt.def','../data/deflef_to_graph_and_verilog/0. defs/a1_'+str(idx)+'bank.txt/a1_'+str(idx)+'bank.txt.def')'''
-    defdef='scratch_detailed.def'
-    os.system('python3 2_for_modifying_graph.py '+defdef+' '+wiremode+' '+file_type)
+    '''for idx in range(104):
+        if idx<=102:
+            continue
+        os.mkdir('../data/deflef_to_graph_and_verilog/0. defs/rbank'+str(idx))
+        shutil.copyfile('/tmp/Rbank/rbank'+str(idx)+'.def','../data/deflef_to_graph_and_verilog/0. defs/rbank'+str(idx)+'/rbank'+str(idx)+'.def')'''
 
-    '''idx=int()
+
+    idx=int()
     for idx in range(200):
         defdef=str()
         if file_type=='a1_bank':
@@ -31,12 +32,20 @@ def get_file_and_make_directory(listlist,wiremode,file_type):
             defdef=str(idx)+'bank_detailed.def'        
         elif file_type=='random':
             defdef='random'+str(idx)+'_detailed.def'
+        elif file_type=='Rbank':
+            defdef='rbank'+str(idx)+'.def'
 
         if file_type=='bank' and (idx==25 or idx==83):
             continue
-        
+        if file_type=='Rbank' and (idx==0 or idx==1 or idx==2):
+            continue
 
-        os.system('python3 2_for_modifying_graph.py '+defdef+' '+wiremode)
+        if wiremode=='star':
+            os.system('python3 0_revise_def_file.py '+defdef)
+            os.system('python3 1_test.py '+defdef)
+            os.system('python3 2_for_modifying_graph.py '+defdef+' '+wiremode+' '+file_type) 
+        else:
+            os.system('python3 2_for_modifying_graph.py '+defdef+' '+wiremode+' '+file_type)
 
 
         if (file_type=='a1_bank' or file_type=='a1_rbank') and idx==49:
@@ -44,8 +53,13 @@ def get_file_and_make_directory(listlist,wiremode,file_type):
         if (file_type=='bank' or file_type=='rbank' or file_type=='random') and idx==99:
             break
         if (file_type=='a2_bank' or file_type=='a2_rbank') and idx==199:
-            break'''
+            break
 
+        if (file_type=='Rbank') and idx==102:
+            break
+    '''defdef='scratch_detailed.def'
+    os.system('python3 2_for_modifying_graph.py '+defdef+' '+wiremode+' '+file_type)'''
+    
     return 0
 
 
@@ -55,9 +69,9 @@ def get_file_and_make_directory(listlist,wiremode,file_type):
 if __name__ == "__main__":
     listlist=list()
 
-    deflist=['a1_bank', 'a1_rbank', 'bank', 'rbank', 'random', 'a2_bank', 'a2_rbank']
+    deflist=['Rbank']
     wire_mod=['star','hpwl','clique','wire_load']
 
-    for iddx in range(4):
-        for kkiiddxx in range(7):
+    for iddx in range(len(wire_mod)):
+        for kkiiddxx in range(len(deflist)):
             get_file_and_make_directory(listlist,wire_mod[iddx],deflist[kkiiddxx])

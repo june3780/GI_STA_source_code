@@ -26,6 +26,8 @@ def get_delay_path(wirewire,checking,number):
         file_name_of_path='a2_'+str(number)+'bank.txt'
     elif checking=='a2_rbank':
         file_name_of_path='a2_'+str(number)+'rbank.txt'
+    elif checking=='Rbank':
+        file_name_of_path='rbank'+str(number)
 
     file_name_of_path=file_name_of_path+'.json'
 
@@ -53,7 +55,11 @@ def get_path_of_group(wire_mode,checking):
     kidx=int()
     while True:
 
-        if (kidx==25 and checking=='bank') or (kidx==83 and checking=='bank'):
+        if checking=='bank' and (kidx==25 or kidx==83):
+            kidx=kidx+1
+            continue
+
+        if checking=='Rbank' and (kidx==0 or kidx==1 or kidx==2):
             kidx=kidx+1
             continue
 
@@ -67,6 +73,9 @@ def get_path_of_group(wire_mode,checking):
             break
 
         if (kidx==199 and (checking=='a2_bank' or checking=='a2_rbank')):
+            break
+
+        if (kidx==102 and (checking=='Rbank')):
             break
 
         kidx=kidx+1
@@ -289,7 +298,7 @@ def get_other_path_of_delay(range_number_of_path,path_delays,checking,wirewire,n
     colorlist=get_colors(number)
     plt.scatter(list_x, list_y,c=colorlist[1],label=checking+"_all_path")
 
-    plt.xlabel('worst_delay')
+    plt.xlabel('worst_delay: '+wirewire)
     plt.ylabel('std_of_delays: '+str(range_number_of_path))
     return 0
 
@@ -374,6 +383,7 @@ if __name__ == "__main__":
         plt.plot(list_a1_rbank[2][0], list_a1_rbank[2][1], color=list_a1_rbank[3][1], label=searching+"_all_path")
 
     plt.axvline(x=scratch_delay,color='k')
+    plt.xlabel(wire_mod)
     plt.legend()
     plt.show()
     plt.close()

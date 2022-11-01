@@ -1219,6 +1219,8 @@ def get_file_address_function(defdef):
         name_of_file='a2_rbank'
     elif 'a2' in defdef and 'bank' in defdef:
         name_of_file='a2_bank'
+    elif 'rbank' in defdef and 'bank' in defdef and 'detailed' not in defdef and 'a1' not in defdef and 'a2' not in defdef:
+        name_of_file='Rbank' 
 
     return name_of_file
 
