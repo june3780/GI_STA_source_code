@@ -163,6 +163,8 @@ def compare_with_scratch(dictionary,wire_mod,checking,color_number):
     delay_list_of_same_path=list()
     delay_list_of_different_path=list()
 
+
+
     all_path_delay.append('scratch_detailed'+' '+str(scratch_delay[-2][0:2])+' '+str(scratch_delay[-2][2]))
     for ivalue in dictionary:
         if ivalue !='scratch_detailed':
@@ -197,15 +199,11 @@ def compare_with_scratch(dictionary,wire_mod,checking,color_number):
                 all_path_delay.append(ivalue+' '+str(dictionary[ivalue][-2][0:2])+' '+str(dictionary[ivalue][-2][2]))
 
 
+
+
     std_total=np.std(delay_list_of_all)
-    total_number_with_same_path=len(same_path_same_unateness)
-    total_number_with_different_path=len(diff_path)
-
     mean_with_same_path=np.mean(delay_list_of_same_path)
-
     std_with_same_path=np.std(delay_list_of_same_path)
-
-    std_with_different_path=np.std(delay_list_of_different_path)
 
 
     address_of_path='../data/deflef_to_graph_and_verilog/results/'+checking+'/test_7800_'+wire_mod+'/path_compare.dat'
@@ -231,11 +229,16 @@ def compare_with_scratch(dictionary,wire_mod,checking,color_number):
     print('scratch_path: '+'scratch_detailed, timing: '+str(scratch_delay[-2][2])+', last_cell: '+scratch_delay[-2][0])
     print('worst_path(same_path): '+worst_path+', timing: '+str(worst_time))
     print('best_path(same_path): '+best_path+', timing: '+str(best_time))
+
+
     ##print('same_path_mean: '+str(mean_with_same_path))
     ##print('same_path_std: '+str(std_with_same_path))
 
     delay_list_of_same_path.sort()
-    cv1_pdf=stats.norm.pdf(delay_list_of_same_path,mean_with_same_path,std_with_same_path)
+
+    cv1_pdf=np.array([])
+    if wire_mod !='wire_load':
+        cv1_pdf=stats.norm.pdf(delay_list_of_same_path,mean_with_same_path,std_with_same_path)
 
     ##print('scratch_path: '+'scratch_detailed, timing: '+str(scratch_delay[-2][2])+', last_cell: '+scratch_delay[-2][0])
     print('worst_path: '+worst_path1+', timing: '+str(worst_time1)+', last_cell: '+dictionary[worst_path1][-2][0])
@@ -245,8 +248,10 @@ def compare_with_scratch(dictionary,wire_mod,checking,color_number):
     
 
     delay_list_of_all.sort()
-    cv2_pdf=stats.norm.pdf(delay_list_of_all,mean_total,std_total)
 
+    cv2_pdf=np.array([])
+    if wire_mod !='wire_load':
+        cv2_pdf=stats.norm.pdf(delay_list_of_all,mean_total,std_total)
 
     colorlist=get_colors(color_number)
 
@@ -349,6 +354,8 @@ if __name__ == "__main__":
         path_delays=dict()
         path_delays=get_path_of_group(wire_mod,searching)
         list_a1_rbank=compare_with_scratch(path_delays,wire_mod,searching,idx)
+        if wire_mod=='wire_load':
+            continue
         list_of_all_delay.append([list_a1_rbank,searching])
         get_other_path_of_delay(range_number,path_delays,searching,wire_mod,idx)
 
@@ -370,6 +377,3 @@ if __name__ == "__main__":
     plt.legend()
     plt.show()
     plt.close()
-
-
-    plt.show()

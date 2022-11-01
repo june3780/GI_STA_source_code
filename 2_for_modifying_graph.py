@@ -1315,12 +1315,9 @@ if __name__ == "__main__":
 
 
     file_pathtt='../data/deflef_to_graph_and_verilog/results/'+file_address_name+'/test_7800_'+wire_mode+'/'+file_name.split('_revised')[0]+'.json'
-    if 'scratch' in arguments[1]:
-        file_pathtt='../data/deflef_to_graph_and_verilog/results/'+file_address_name+'/test_7800_'+wire_mode+'/'+file_name.split('_revised')[0]+'.json'
     with open(file_pathtt,'w') as f:
         json.dump(total_delay,f,indent=4)
 
-    
     file_pathpath='../data/deflef_to_graph_and_verilog/results/'+file_address_name+'/test_7800_without_clk_'+wire_mode+'/'+file_name.split('_revised')[0]+'.json'
     with open(file_pathpath,'w') as f:
         json.dump(delay_without_clk_All,f,indent=4)
