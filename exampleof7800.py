@@ -76,7 +76,7 @@ def get_file_and_make_directory(wiremode,file_type):
 if __name__ == "__main__":
     listlist=list()
 
-    deflist=['Rbank2']
+    deflist=['Rbank2','Rbank','random3']
     wire_mod=['star','hpwl','clique','wire_load']
 
     for iddx in range(len(wire_mod)):
