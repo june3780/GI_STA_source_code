@@ -7,12 +7,12 @@ import sys
 
 
 
-def get_file_and_make_directory(listlist,wiremode,file_type):
-    '''for idx in range(104):
-        if idx<=102:
-            continue
-        os.mkdir('../data/deflef_to_graph_and_verilog/0. defs/rbank'+str(idx))
-        shutil.copyfile('/tmp/Rbank/rbank'+str(idx)+'.def','../data/deflef_to_graph_and_verilog/0. defs/rbank'+str(idx)+'/rbank'+str(idx)+'.def')'''
+def get_file_and_make_directory(wiremode,file_type):
+    '''for idx in range(200):
+        if idx==3:
+            
+            os.mkdir('../data/deflef_to_graph_and_verilog/0. defs/rbank'+str(idx)+'_detailed')
+            shutil.copyfile('../data/7809cells_groups/Rbank2/rbank'+str(idx)+'_detailed.def','../data/deflef_to_graph_and_verilog/0. defs/rbank'+str(idx)+'_detailed/rbank'+str(idx)+'_detailed.def')'''
 
 
     idx=int()
@@ -34,10 +34,16 @@ def get_file_and_make_directory(listlist,wiremode,file_type):
             defdef='random'+str(idx)+'_detailed.def'
         elif file_type=='Rbank':
             defdef='rbank'+str(idx)+'.def'
+        elif file_type=='random3':
+            defdef='3_random_'+str(idx)+'.def'
+        elif file_type=='Rbank2':
+            defdef='rbank'+str(idx)+'_detailed.def'
+
+
 
         if file_type=='bank' and (idx==25 or idx==83):
             continue
-        if file_type=='Rbank' and (idx==0 or idx==1 or idx==2):
+        if (file_type=='Rbank' or file_type=='Rbank2') and (idx==0 or idx==1 or idx==2):
             continue
 
         if wiremode=='star':
@@ -50,13 +56,14 @@ def get_file_and_make_directory(listlist,wiremode,file_type):
 
         if (file_type=='a1_bank' or file_type=='a1_rbank') and idx==49:
             break
-        if (file_type=='bank' or file_type=='rbank' or file_type=='random') and idx==99:
+        if (file_type=='bank' or file_type=='rbank' or file_type=='random' or file_type=='random3') and idx==99:
             break
         if (file_type=='a2_bank' or file_type=='a2_rbank') and idx==199:
             break
 
-        if (file_type=='Rbank') and idx==102:
+        if (file_type=='Rbank' or file_type=='Rbank2') and idx==102:
             break
+
     '''defdef='scratch_detailed.def'
     os.system('python3 2_for_modifying_graph.py '+defdef+' '+wiremode+' '+file_type)'''
     
@@ -69,9 +76,9 @@ def get_file_and_make_directory(listlist,wiremode,file_type):
 if __name__ == "__main__":
     listlist=list()
 
-    deflist=['Rbank']
+    deflist=['Rbank2']
     wire_mod=['star','hpwl','clique','wire_load']
 
     for iddx in range(len(wire_mod)):
         for kkiiddxx in range(len(deflist)):
-            get_file_and_make_directory(listlist,wire_mod[iddx],deflist[kkiiddxx])
+            get_file_and_make_directory(wire_mod[iddx],deflist[kkiiddxx])

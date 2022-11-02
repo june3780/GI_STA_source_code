@@ -1201,28 +1201,7 @@ def descending_find_line(line,square,alpha,xory):
 
 
 
-def get_file_address_function(defdef):
-    name_of_file=str()
-    if 'detailed' in defdef and 'random' in defdef:
-        name_of_file='random'
-    elif 'detailed' in defdef and 'rbank' in defdef:
-        name_of_file='rbank'
-    elif 'detailed' in defdef and 'bank' in defdef:
-        name_of_file='bank'
 
-    elif 'a1' in defdef and 'rbank' in defdef:
-        name_of_file='a1_rbank'
-    elif 'a1' in defdef and 'bank' in defdef:
-        name_of_file='a1_bank'
-
-    elif 'a2' in defdef and 'rbank' in defdef:
-        name_of_file='a2_rbank'
-    elif 'a2' in defdef and 'bank' in defdef:
-        name_of_file='a2_bank'
-    elif 'rbank' in defdef and 'bank' in defdef and 'detailed' not in defdef and 'a1' not in defdef and 'a2' not in defdef:
-        name_of_file='Rbank' 
-
-    return name_of_file
 
 
 
@@ -1235,10 +1214,7 @@ if __name__ == "__main__":
     def_name=arguments[1]
     ffffile_name=def_name.split('.def')[0]+'_revised.def'
 
-    file_address_name=get_file_address_function(def_name)
-
-    if 'scratch' in arguments[1]:
-        file_address_name=arguments[3]
+    file_address_name=arguments[3]
 
     wire_mode=arguments[2]
     CLK_mode='ideal'
@@ -1315,6 +1291,15 @@ if __name__ == "__main__":
         path_worst=get_new_worst_path(delay_without_clk_All,what_has_worst_delay)
         total_delay.append(path_worst)
 
+    dir_list=os.listdir('../data/deflef_to_graph_and_verilog/results')
+
+    if file_address_name not in dir_list:
+        os.mkdir('../data/deflef_to_graph_and_verilog/results/'+file_address_name)
+        wire_modess=['star','clique','hpwl','wire_load']
+        for wireidx in range(4):
+            os.mkdir('../data/deflef_to_graph_and_verilog/results/'+file_address_name+'/test_7800_'+wire_modess[wireidx])
+            os.mkdir('../data/deflef_to_graph_and_verilog/results/'+file_address_name+'/test_7800_without_clk_'+wire_modess[wireidx])
+            os.mkdir('../data/deflef_to_graph_and_verilog/results/'+file_address_name+'/test_7800_zfor_clk_'+wire_modess[wireidx])
 
     file_pathtt='../data/deflef_to_graph_and_verilog/results/'+file_address_name+'/test_7800_'+wire_mode+'/'+file_name.split('_revised')[0]+'.json'
     with open(file_pathtt,'w') as f:
@@ -1327,6 +1312,10 @@ if __name__ == "__main__":
     file_pathpath='../data/deflef_to_graph_and_verilog/results/'+file_address_name+'/test_7800_zfor_clk_'+wire_mode+'/'+file_name.split('_revised')[0]+'.json'
     with open(file_pathpath,'w') as f:
         json.dump(stage_All_clk,f,indent=4)
+    
+    print(file_name.split('_revised')[0]+'.json')
+    print()
+    print()
 
 ##################################################################################################################################################
 

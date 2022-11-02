@@ -12,23 +12,7 @@ def get_delay_path(wirewire,checking,number):
     address_of_path='../data/deflef_to_graph_and_verilog/results/'+checking+'/test_7800_'+wirewire+'/'
 
     file_name_of_path=str()
-    if checking=='bank':
-        file_name_of_path=str(number)+'bank_detailed'
-    elif checking=='rbank':
-        file_name_of_path=str(number)+'rbank_detailed'
-    elif checking=='random':
-        file_name_of_path='random'+str(number)+'_detailed'
-    elif checking=='a1_bank':
-        file_name_of_path='a1_'+str(number)+'bank.txt'
-    elif checking=='a1_rbank':
-        file_name_of_path='a1_'+str(number)+'rbank.txt'
-    elif checking=='a2_bank':
-        file_name_of_path='a2_'+str(number)+'bank.txt'
-    elif checking=='a2_rbank':
-        file_name_of_path='a2_'+str(number)+'rbank.txt'
-    elif checking=='Rbank':
-        file_name_of_path='rbank'+str(number)
-
+    file_name_of_path=get_file_name(checking,number)
     file_name_of_path=file_name_of_path+'.json'
 
     if type(number)==type(' '):
@@ -50,6 +34,7 @@ def get_path_of_group(wire_mode,checking):
     path_dictionary=dict()
     idx=str(' ')
     path_of_scrath=get_delay_path(wire_mode,checking,idx)
+    ##get_net_info(checking,idx)
     path_dictionary.update(path_of_scrath)
 
     kidx=int()
@@ -217,7 +202,7 @@ def compare_with_scratch(dictionary,wire_mod,checking,color_number):
 
     address_of_path='../data/deflef_to_graph_and_verilog/results/'+checking+'/test_7800_'+wire_mod+'/path_compare.dat'
 
-    '''for idx in range(len(all_path_delay)):
+    for idx in range(len(all_path_delay)):
         if idx==0:
             fff=open(address_of_path,'w')
             fff.write(all_path_delay[idx]+'\n')
@@ -228,7 +213,7 @@ def compare_with_scratch(dictionary,wire_mod,checking,color_number):
             fff.write(all_path_delay[idx]+'\n')
             fff.close()
 
-            ##print(all_path_delay[idx])'''
+            ##print(all_path_delay[idx])
 
     print()
     print('changed_path: '+str(len(diffenrent_path)))
@@ -342,6 +327,35 @@ def get_colors(color_number):
     return [same_color,all_color]
 
 
+
+def get_file_name(checking,number):
+    file_name_of_path=str()
+    if checking=='bank':
+        file_name_of_path=str(number)+'bank_detailed'
+    elif checking=='rbank':
+        file_name_of_path=str(number)+'rbank_detailed'
+    elif checking=='random':
+        file_name_of_path='random'+str(number)+'_detailed'
+    elif checking=='a1_bank':
+        file_name_of_path='a1_'+str(number)+'bank.txt'
+    elif checking=='a1_rbank':
+        file_name_of_path='a1_'+str(number)+'rbank.txt'
+    elif checking=='a2_bank':
+        file_name_of_path='a2_'+str(number)+'bank.txt'
+    elif checking=='a2_rbank':
+        file_name_of_path='a2_'+str(number)+'rbank.txt'
+    elif checking=='Rbank':
+        file_name_of_path='rbank'+str(number)
+    return file_name_of_path
+
+def get_net_info(checking,number):
+    defdef=get_file_name(checking,number)
+    net_info_data='../data/deflef_to_graph_and_verilog/3. graphs/'+defdef+'_revised(temp)/temporary_net_info_'+defdef+'_revised(temp).json'
+    with open(net_info_data, 'r') as f:
+        lalala=json.load(f)
+    f.close()
+    print(len(lalala))
+    return 0
 
 
 if __name__ == "__main__":
