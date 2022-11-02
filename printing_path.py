@@ -6,6 +6,7 @@ import scipy.stats as stats
 import numpy as np
 import matplotlib.pyplot as plt
 from pylab import rcParams
+import os
 
 def get_delay_path(wirewire,checking,number):
 
@@ -98,10 +99,7 @@ def compare_with_scratch(dictionary,wire_mod,checking,color_number):
     mean_with_same_path=float()
     std_with_same_path=float()
 
-    total_number_with_different_path=int()
     total_delay_with_different_path=float()
-    mean_with_different_path=float()
-    std_with_different_path=float()
 
 
     for ivalue in dictionary:
@@ -257,7 +255,7 @@ def compare_with_scratch(dictionary,wire_mod,checking,color_number):
 
 
 
-def get_other_path_of_delay(range_number_of_path,path_delays,checking,wirewire,number):
+def get_other_path_of_delay(range_number_of_path,path_delays,checking,wirewire,number,Pass):
     print()
     list_of_other_ways=list(path_delays.keys())
     list_of_other_ways.remove('scratch_detailed')
@@ -281,10 +279,11 @@ def get_other_path_of_delay(range_number_of_path,path_delays,checking,wirewire,n
 
 
     colorlist=get_colors(number)
-    plt.scatter(list_x, list_y,c=colorlist[1],label=checking+"_all_path")
+    if Pass!='Pass':
+        plt.scatter(list_x, list_y,c=colorlist[1],label=checking+"_all_path")
 
-    plt.xlabel('worst_delay: '+wirewire)
-    plt.ylabel('std_of_delays: '+str(range_number_of_path))
+        plt.xlabel('worst_delay: '+wirewire)
+        plt.ylabel('std_of_delays: '+str(range_number_of_path))
     return 0
 
 
@@ -374,6 +373,39 @@ def get_net_info(checking,number):
 if __name__ == "__main__":
     wire_mod=sys.argv[1]
 
+
+    ttt=int()
+    for idx in range(int(sys.argv[2])):
+        searching=sys.argv[idx+3]
+        file_saved_table='../data/deflef_to_graph_and_verilog/results/'+searching+'/test_7800_'+wire_mod
+        if 'worst_path_group_of_a_def.json' not in os.listdir(file_saved_table):
+            ttt=ttt+1
+    if ttt==0:
+        scratch_value=float()
+        for idx in range(int(sys.argv[2])):
+            aaa=dict()
+
+            searching=sys.argv[idx+3]
+
+            file_saved_table='../data/deflef_to_graph_and_verilog/results/'+searching+'/test_7800_'+wire_mod
+            table_npy=np.load(file_saved_table+'/worst_path_group_of_a_def.npy')
+
+            with open(file_saved_table+'/worst_path_group_of_a_def.json', 'r') as file:
+                aaa=json.load(file)
+
+            if sys.argv[-1]!='Pass':
+                plt.plot(aaa['data'], table_npy,color=aaa['color'],label=aaa['label'])
+            scratch_value=aaa['scratch_line']
+
+        if sys.argv[-1]!='Pass':
+            plt.axvline(x=scratch_value,color='k')
+            plt.xlabel(wire_mod)
+            plt.legend()
+            plt.show()
+            plt.close()
+
+
+
     scratch_delay=float()
     range_number=int()
     if len(sys.argv) !=int(sys.argv[2])+3:
@@ -383,34 +415,50 @@ if __name__ == "__main__":
 
     list_of_all_delay=list()
 
-    for idx in range(int(sys.argv[2])):
+    if range_number!=0:
+        for idx in range(int(sys.argv[2])):
 
-        searching=sys.argv[idx+3]
-        print(searching)
-        path_delays=dict()
-        path_delays=get_path_of_group(wire_mod,searching)
-        list_a1_rbank=compare_with_scratch(path_delays,wire_mod,searching,idx)
-        if wire_mod=='wire_load':
-            continue
-        list_of_all_delay.append([list_a1_rbank,searching])
-        get_other_path_of_delay(range_number,path_delays,searching,wire_mod,idx)
+            searching=sys.argv[idx+3]
+            print(searching)
+            path_delays=dict()
+            path_delays=get_path_of_group(wire_mod,searching)
+            list_a1_rbank=compare_with_scratch(path_delays,wire_mod,searching,idx)
+            if wire_mod=='wire_load':
+                continue
+            list_of_all_delay.append([list_a1_rbank,searching])
+            get_other_path_of_delay(range_number,path_delays,searching,wire_mod,idx,sys.argv[-1])
 
-        scratch_delay=list_a1_rbank[0]
-        
-        print()
-        
-    plt.legend()
-    plt.show()
-    plt.close()
+            scratch_delay=list_a1_rbank[0]
+            
+            print()
+        if sys.argv[-1]!='Pass':
+            plt.legend()
+            plt.show()
+            plt.close()
 
-    for idxx in range(len(list_of_all_delay)):
-        list_a1_rbank=list_of_all_delay[idxx][0]
-        searching=list_of_all_delay[idxx][1]
-        #plt.plot(list_a1_rbank[1][0], list_a1_rbank[1][1], color=list_a1_rbank[3][0], label=searching+"_same_path")
-        plt.plot(list_a1_rbank[2][0], list_a1_rbank[2][1], color=list_a1_rbank[3][1], label=searching+"_all_path")
 
-    plt.axvline(x=scratch_delay,color='k')
-    plt.xlabel(wire_mod)
-    plt.legend()
-    plt.show()
-    plt.close()
+    
+
+    if ttt!=0 and range_number!=0:
+        for idxx in range(len(list_of_all_delay)):
+
+            aaa=dict()
+            list_a1_rbank=list_of_all_delay[idxx][0]
+            searching=list_of_all_delay[idxx][1]
+            #plt.plot(list_a1_rbank[1][0], list_a1_rbank[1][1], color=list_a1_rbank[3][0], label=searching+"_same_path")
+            
+            aaa={'data':list_a1_rbank[2][0],'color':list_a1_rbank[3][1],'label':searching+"_all_path",'scratch_line':scratch_delay}
+            table_npy=list_a1_rbank[2][1]
+            if sys.argv[-1]!='Pass':
+                plt.plot(aaa['data'], table_npy,color=aaa['color'],label=aaa['label'])
+            file_saved_table='../data/deflef_to_graph_and_verilog/results/'+searching+'/test_7800_'+wire_mod
+            with open(file_saved_table+'/worst_path_group_of_a_def.json', 'w') as file:
+                json.dump(aaa, file)
+            np.save(file_saved_table+'/worst_path_group_of_a_def',table_npy)
+
+        if sys.argv[-1]!='Pass':
+            plt.axvline(x=scratch_delay,color='k')
+            plt.xlabel(wire_mod)
+            plt.legend()
+            plt.show()
+            plt.close()
