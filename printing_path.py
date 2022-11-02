@@ -13,7 +13,7 @@ def get_delay_path(wirewire,checking,number):
     address_of_path='../data/deflef_to_graph_and_verilog/results/'+checking+'/test_7800_'+wirewire+'/'
 
     file_name_of_path=str()
-    file_name_of_path=get_file_name(checking,number)
+    file_name_of_path=get_file_name(checking,number)[0]
     file_name_of_path=file_name_of_path+'.json'
 
     if type(number)==type(' '):
@@ -41,28 +41,17 @@ def get_path_of_group(wire_mode,checking):
     kidx=int()
     while True:
 
-        if checking=='bank' and (kidx==25 or kidx==83):
+        something=get_file_name(checking,kidx)[1]
+        if something=='continue':
             kidx=kidx+1
             continue
 
-        if checking=='Rbank' and (kidx==0 or kidx==1 or kidx==2):
-            kidx=kidx+1
-            continue
+        elif something=='break':
+            break
 
         path_of_scrath=get_delay_path(wire_mode,checking,kidx)
         path_dictionary.update(path_of_scrath)
 
-        if (kidx==99 and (checking=='bank' or checking=='rbank' or checking=='random' or checking=='random3')):
-            break
-
-        if (kidx==49 and (checking=='a1_bank' or checking=='a1_rbank')):
-            break
-
-        if (kidx==199 and (checking=='a2_bank' or checking=='a2_rbank')):
-            break
-
-        if (kidx==102 and (checking=='Rbank' or checking=='Rbank2')):
-            break
 
         kidx=kidx+1
     return path_dictionary
@@ -323,15 +312,37 @@ def get_colors(color_number):
         same_color="lightyellow"
         all_color="yellow"
 
-    elif color_number==7:
+    elif color_number==8:
         same_color="lightpink"
         all_color="hotpink"
 
-    elif color_number==7:
+    else
         same_color="lightsalmon"
         all_color="orangered"
 
     return [same_color,all_color]
+
+
+
+
+
+
+
+
+
+def get_net_info(checking,number):
+    defdef=get_file_name(checking,number)[0]
+    net_info_data='../data/deflef_to_graph_and_verilog/3. graphs/'+defdef+'_revised(temp)/temporary_net_info_'+defdef+'_revised(temp).json'
+    with open(net_info_data, 'r') as f:
+        lalala=json.load(f)
+    f.close()
+    print(len(lalala))
+    return 0
+
+
+
+
+
 
 
 
@@ -357,17 +368,35 @@ def get_file_name(checking,number):
         file_name_of_path='rbank'+str(number)+'_detailed'
     elif checking=='random3':
         file_name_of_path='3_random_'+str(number)
-    return file_name_of_path
+    elif checking=='Random':
+        file_name_of_path='Random'+str(number)+'_detailed'
+
+    strstr=str()
+    if checking=='bank' and (number==25 or number==83):
+        strstr='continue'
+
+    if checking=='Rbank' and (number==0 or number==1 or number==2):
+        strstr='continue'
+
+    if (number==100 and (checking=='bank' or checking=='rbank' or checking=='random' or checking=='random3' or checking=='Random')):
+        strstr='break'
+
+    if (number==50 and (checking=='a1_bank' or checking=='a1_rbank')):
+        strstr='break'
+
+    if (number==200 and (checking=='a2_bank' or checking=='a2_rbank')):
+        strstr='break'
+
+    if (number==103 and (checking=='Rbank' or checking=='Rbank2')):
+        strstr='break'
 
 
-def get_net_info(checking,number):
-    defdef=get_file_name(checking,number)
-    net_info_data='../data/deflef_to_graph_and_verilog/3. graphs/'+defdef+'_revised(temp)/temporary_net_info_'+defdef+'_revised(temp).json'
-    with open(net_info_data, 'r') as f:
-        lalala=json.load(f)
-    f.close()
-    print(len(lalala))
-    return 0
+    return [file_name_of_path,strstr]
+
+
+
+
+
 
 
 if __name__ == "__main__":
@@ -392,6 +421,7 @@ if __name__ == "__main__":
 
             with open(file_saved_table+'/worst_path_group_of_a_def.json', 'r') as file:
                 aaa=json.load(file)
+
 
             if sys.argv[-1]!='Pass':
                 plt.plot(aaa['data'], table_npy,color=aaa['color'],label=aaa['label'])
