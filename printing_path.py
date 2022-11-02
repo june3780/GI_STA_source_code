@@ -51,7 +51,7 @@ def get_path_of_group(wire_mode,checking):
         path_of_scrath=get_delay_path(wire_mode,checking,kidx)
         path_dictionary.update(path_of_scrath)
 
-        if (kidx==99 and (checking=='bank' or checking=='rbank' or checking=='random')):
+        if (kidx==99 and (checking=='bank' or checking=='rbank' or checking=='random' or checking=='random3')):
             break
 
         if (kidx==49 and (checking=='a1_bank' or checking=='a1_rbank')):
@@ -60,7 +60,7 @@ def get_path_of_group(wire_mode,checking):
         if (kidx==199 and (checking=='a2_bank' or checking=='a2_rbank')):
             break
 
-        if (kidx==102 and (checking=='Rbank')):
+        if (kidx==102 and (checking=='Rbank' or checking=='Rbank2')):
             break
 
         kidx=kidx+1
@@ -324,6 +324,14 @@ def get_colors(color_number):
         same_color="lightyellow"
         all_color="yellow"
 
+    elif color_number==7:
+        same_color="lightpink"
+        all_color="hotpink"
+
+    elif color_number==7:
+        same_color="lightsalmon"
+        all_color="orangered"
+
     return [same_color,all_color]
 
 
@@ -346,7 +354,12 @@ def get_file_name(checking,number):
         file_name_of_path='a2_'+str(number)+'rbank.txt'
     elif checking=='Rbank':
         file_name_of_path='rbank'+str(number)
+    elif checking=='Rbank2':
+        file_name_of_path='rbank'+str(number)+'_detailed'
+    elif checking=='random3':
+        file_name_of_path='3_random_'+str(number)
     return file_name_of_path
+
 
 def get_net_info(checking,number):
     defdef=get_file_name(checking,number)
