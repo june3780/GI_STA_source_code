@@ -63,13 +63,15 @@ def copy_scratch(wirewire,defdef):
 
 def get_def_files(origin_of_def):
     kkiiddxx=int()
+    doesnt_exist=list()
+    print('june3780')
     while True:
         list_of_defs=os.listdir('../data/deflef_to_graph_and_verilog/0. defs')
         list_of_origins=os.listdir('../data/7809cells_groups/'+origin_of_def)
 
         checking=get_limitation(origin_of_def,kkiiddxx)
 
-        target_in_origin='random'+str(kkiiddxx)+'_detailed_detailed.def'
+        target_in_origin=get_target_name(origin_of_def,kkiiddxx)
 
         if checking =='break':
             break
@@ -81,15 +83,16 @@ def get_def_files(origin_of_def):
         elif checking.split('.def')[0] not in list_of_defs:
             if target_in_origin not in list_of_origins:
                 print(target_in_origin+' does not exist')
-
+                doesnt_exist.append(kkiiddxx)
             else:
                 os.mkdir('../data/deflef_to_graph_and_verilog/0. defs/'+checking.split('.def')[0])
                 shutil.copyfile('../data/7809cells_groups/'+origin_of_def+'/'+target_in_origin,'../data/deflef_to_graph_and_verilog/0. defs/'+checking.split('.def')[0]+'/'+checking)
                 kkiiddxx=kkiiddxx+1
                 continue
 
+
         kkiiddxx=kkiiddxx+1
-    return 0
+    return doesnt_exist
 
 
 
@@ -112,6 +115,37 @@ def get_limitation(file_type,number):
 
 
 
+def get_target_name(checking,number):
+    strstrstr=str()
+    if checking=='bank':
+        strstrstr=str(number)+'bank_detailed'
+    elif checking=='rbank':
+        strstrstr=str(number)+'rbank_detailed'
+    elif checking=='random':
+        strstrstr='random'+str(number)+'_detailed'
+    elif checking=='a1_bank':
+        strstrstr=str(number)+'bank.txt'
+    elif checking=='a1_rbank':
+        strstrstr=str(number)+'rbank.txt'
+    elif checking=='a2_bank':
+        strstrstr=str(number)+'bank.txt'
+    elif checking=='a2_rbank':
+        strstrstr=str(number)+'rbank.txt'
+    elif checking=='Rbank':
+        strstrstr='rbank'+str(number)
+    elif checking=='Rbank2':
+        strstrstr='rbank'+str(number)+'_detailed'
+    elif checking=='random3':
+        strstrstr='random'+str(number)+'_detailed'
+    elif checking=='Random':
+        strstrstr='random'+str(number)+'_detailed'
+    elif checking=='Random2':
+        strstrstr='random'+str(number)+'_detailed'
+    elif checking=='Random2_detailed':
+        strstrstr='random'+str(number)+'_detailed_detailed'
+    strstrstr=strstrstr+'.def'
+    
+    return strstrstr
 
 
 
@@ -174,7 +208,7 @@ if __name__ == "__main__":
 
     if_not_zero=sys.argv[1]
 
-    deflist=['Random2_detailed']
+    deflist=['a1_bank']
     wire_mod=['star','hpwl','clique']
 
     for kkiiddxx in range(len(deflist)):

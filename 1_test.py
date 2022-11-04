@@ -872,7 +872,7 @@ if __name__ == "__main__":
 
 
     list_of_data_directory=list()
-    targetdir=r'/home/june/Documents/PNR/timing/data/deflef_to_graph_and_verilog/3. graphs/'
+    targetdir=r'../data/deflef_to_graph_and_verilog/3. graphs/'
     files = os.listdir(targetdir)
     for i in files :
             if os.path.isdir(targetdir+r"//"+i):
