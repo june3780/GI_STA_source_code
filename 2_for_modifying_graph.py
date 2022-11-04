@@ -1295,7 +1295,7 @@ if __name__ == "__main__":
 
     if file_address_name not in dir_list:
         os.mkdir('../data/deflef_to_graph_and_verilog/results/'+file_address_name)
-        wire_modess=['star','clique','hpwl','wire_load']
+        wire_modess=['star','clique','hpwl']
         for wireidx in range(4):
             os.mkdir('../data/deflef_to_graph_and_verilog/results/'+file_address_name+'/test_7800_'+wire_modess[wireidx])
             os.mkdir('../data/deflef_to_graph_and_verilog/results/'+file_address_name+'/test_7800_without_clk_'+wire_modess[wireidx])
