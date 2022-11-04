@@ -8,7 +8,7 @@ import numpy as np
 import json
 import copy
 
-
+import pandas as pd
 import time
 import sys
 
@@ -1409,10 +1409,10 @@ if __name__ == "__main__":
 
     delay_only_first_stage_without_clk_All=get_new_Delay_of_nodes_stage0(All_with_wire_cap,delay_with_clk_All,wire_mode,liberty_type)
     delay_without_clk_All=get_new_all_Delay_Transition_of_nodes(delay_only_first_stage_without_clk_All,wire_mode,liberty_type)
-    path=get_new_worst_path(delay_without_clk_All)'''
+    path=get_new_worst_path(delay_without_clk_All)
 
 
-    '''if 'scratch' in def_name:
+    if 'scratch' in def_name:
         file_pathpath='temp_scratch.json'
         with open(file_pathpath,'w') as f:
             json.dump(delay_without_clk_All,f,indent=4)
@@ -1423,11 +1423,11 @@ if __name__ == "__main__":
 
 
     else:
-        file_pathpath='temp.json'
+        file_pathpath='temp_'+def_name.split('.def')[0]+'.json'
         with open(file_pathpath,'w') as f:
             json.dump(delay_without_clk_All,f,indent=4)
 
-        file_pathpath='temp_for_clk.json'
+        file_pathpath='temp_for_clk_'+def_name.split('.def')[0]+'.json'
         with open(file_pathpath,'w') as f:
             json.dump(stage_All_clk,f,indent=4)'''
 
@@ -1447,13 +1447,13 @@ if __name__ == "__main__":
         with open (file_pathpath,'r') as ff:
             clk_All=json.load(ff)
     else:
-        file_pathpath='temp.json'
+        file_pathpath='temp_3_random_50.json'
         list_of_last_nodes=dict()
         with open (file_pathpath,'r') as ff:
             delay_without_clk_All=json.load(ff)
 
 
-        file_pathpath='temp_for_clk.json'
+        file_pathpath='temp_for_clk_3_random_50.json'
         with open (file_pathpath,'r') as ff:
             clk_All=json.load(ff)
     

@@ -69,7 +69,7 @@ def get_def_files(origin_of_def):
 
         checking=get_limitation(origin_of_def,kkiiddxx)
 
-        target_in_origin='random'+str(kkiiddxx)+'_detailed.def'
+        target_in_origin='random'+str(kkiiddxx)+'_detailed_detailed.def'
 
         if checking =='break':
             break
@@ -141,6 +141,10 @@ def get_file_name(checking,number):
         file_name_of_path='3_random_'+str(number)
     elif checking=='Random':
         file_name_of_path='Random'+str(number)+'_detailed'
+    elif checking=='Random2':
+        file_name_of_path='Random1103_oneiter_'+str(number)+'_detailed'
+    elif checking=='Random2_detailed':
+        file_name_of_path='Random1103_oneiter_'+str(number)+'_detailed_detailed'
 
     strstr=str()
     if checking=='bank' and (number==25 or number==83):
@@ -149,7 +153,7 @@ def get_file_name(checking,number):
     if (checking=='Rbank' or checking=='Rbank2') and (number==0 or number==1 or number==2):
         strstr='continue'
 
-    if (number==100 and (checking=='bank' or checking=='rbank' or checking=='random' or checking=='random3' or checking=='Random')):
+    if (number==100 and (checking=='bank' or checking=='rbank' or checking=='random' or checking=='random3' or checking=='Random' or checking=='Random2',checking=='Random2_detailed')):
         strstr='break'
 
     if (number==50 and (checking=='a1_bank' or checking=='a1_rbank')):
@@ -161,7 +165,6 @@ def get_file_name(checking,number):
     if (number==103 and (checking=='Rbank' or checking=='Rbank2')):
         strstr='break'
 
-
     return [file_name_of_path,strstr]
 
 
@@ -171,13 +174,15 @@ if __name__ == "__main__":
 
     if_not_zero=sys.argv[1]
 
-    deflist=['Random']
-    wire_mod=['star','hpwl','clique','wire_load']
+    deflist=['Random2_detailed']
+    wire_mod=['star','hpwl','clique']
 
     for kkiiddxx in range(len(deflist)):
         get_def_files(deflist[kkiiddxx])
+    
 
-    if if_not_zero==1:
+
+    if if_not_zero==str(1):
         for iddx in range(len(wire_mod)):
             for kkiiddxx in range(len(deflist)):
                 get_file_and_make_directory(wire_mod[iddx],deflist[kkiiddxx])

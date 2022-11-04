@@ -6,11 +6,11 @@ import sys
 
 def do_printing(wirewire):
 
-    checkinglist="Rbank Rbank2 random3 Random"
-    
+    checkinglist="a1_bank a1_rbank a2_bank a2_rbank bank rbank random Rbank random3 Rbank2 Random Random2"
     number=len(checkinglist.split(' '))
     os.system('python3 printing_path.py '+wirewire+' '+str(number)+' '+checkinglist+' 5 Pass')
     os.system('python3 printing_path.py '+wirewire+' '+str(number)+' '+checkinglist+' 0')
+    print(number)
 
     return 0
 
