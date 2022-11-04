@@ -324,7 +324,7 @@ def get_colors(color_number):
         same_color="lightsalmon"
         all_color="teal"
 
-    elif color_number==11:
+    else:
         same_color="darksalmon"
         all_color="chartreuse"
     

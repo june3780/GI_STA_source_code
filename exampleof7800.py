@@ -64,7 +64,6 @@ def copy_scratch(wirewire,defdef):
 def get_def_files(origin_of_def):
     kkiiddxx=int()
     doesnt_exist=list()
-    print('june3780')
     while True:
         list_of_defs=os.listdir('../data/deflef_to_graph_and_verilog/0. defs')
         list_of_origins=os.listdir('../data/7809cells_groups/'+origin_of_def)
@@ -115,43 +114,49 @@ def get_limitation(file_type,number):
 
 
 
+
+
 def get_target_name(checking,number):
-    strstrstr=str()
+    string1=str()
     if checking=='bank':
-        strstrstr=str(number)+'bank_detailed'
+        string1=str(number)+'bank_detailed.def'
     elif checking=='rbank':
-        strstrstr=str(number)+'rbank_detailed'
+        string1=str(number)+'rbank_detailed.def'
     elif checking=='random':
-        strstrstr='random'+str(number)+'_detailed'
+        string1='random'+str(number)+'_detailed.def'
     elif checking=='a1_bank':
-        strstrstr=str(number)+'bank.txt'
+        string1=str(number)+'bank.txt.def'
     elif checking=='a1_rbank':
-        strstrstr=str(number)+'rbank.txt'
+        string1=str(number)+'rbank.txt.def'
     elif checking=='a2_bank':
-        strstrstr=str(number)+'bank.txt'
+        string1=str(number)+'bank.txt.def'
     elif checking=='a2_rbank':
-        strstrstr=str(number)+'rbank.txt'
+        string1=str(number)+'rbank.txt.def'
     elif checking=='Rbank':
-        strstrstr='rbank'+str(number)
+        string1='rbank'+str(number)+'.def'
     elif checking=='Rbank2':
-        strstrstr='rbank'+str(number)+'_detailed'
+        string1='rbank'+str(number)+'_detailed.def'
     elif checking=='random3':
-        strstrstr='random'+str(number)+'_detailed'
+        string1='random'+str(number)+'_detailed.def'
     elif checking=='Random':
-        strstrstr='random'+str(number)+'_detailed'
+        string1='random'+str(number)+'_detailed.def'
     elif checking=='Random2':
-        strstrstr='random'+str(number)+'_detailed'
+        string1='random'+str(number)+'_detailed.def'
     elif checking=='Random2_detailed':
-        strstrstr='random'+str(number)+'_detailed_detailed'
-    strstrstr=strstrstr+'.def'
-    
-    return strstrstr
+        string1='random'+str(number)+'_detailed_detailed.def'
+
+    return string1
+
+
+
+
 
 
 
 
 
 def get_file_name(checking,number):
+    
     file_name_of_path=str()
     if checking=='bank':
         file_name_of_path=str(number)+'bank_detailed'
@@ -179,6 +184,7 @@ def get_file_name(checking,number):
         file_name_of_path='Random1103_oneiter_'+str(number)+'_detailed'
     elif checking=='Random2_detailed':
         file_name_of_path='Random1103_oneiter_'+str(number)+'_detailed_detailed'
+
 
     strstr=str()
     if checking=='bank' and (number==25 or number==83):
