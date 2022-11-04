@@ -405,7 +405,7 @@ def get_file_name(checking,number):
 
 
 
-    if (number==73 and (checking=='Random2_detailed')):
+    if (number==79 and (checking=='Random2_detailed')):
         strstr='break'
 
     return [file_name_of_path,strstr]
@@ -417,6 +417,8 @@ def get_file_name(checking,number):
 
 
 if __name__ == "__main__":
+
+
     wire_mod=sys.argv[1]
 
 

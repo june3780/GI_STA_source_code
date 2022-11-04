@@ -1129,7 +1129,11 @@ def get_clk_partitioning(clk_All,die_area,def_unit):
         paralleltoaxis='x'
 
     if xshouldbelow==1 and yshouldbelow==1:
+        print(half_line_x)
+        print()
+        print(All['PIN clk'])
         distance_to_parallel_yaxis=abs(appropriate_line_y[0][0]-All['PIN clk']['position'][0])
+
         distance_to_parallel_xaxis=abs(appropriate_line_x[0][1]-All['PIN clk']['position'][1])
 
         if distance_to_parallel_yaxis<distance_to_parallel_xaxis:
@@ -1343,6 +1347,8 @@ if __name__ == "__main__":
     def_name=arguments[1]
     ffffile_name=def_name.split('.def')[0]+'_revised.def'
 
+    file_address_name=arguments[3]
+
     wire_mode=arguments[2]
     CLK_mode='ideal'
     liberty_type='example1_slow.lib'
@@ -1437,23 +1443,23 @@ if __name__ == "__main__":
 
 
     if 'scratch' in def_name:
-        file_pathpath='temp_scratch.json'
+        file_pathpath='../data/deflef_to_graph_and_verilog/results/'+file_address_name+'/test_7800_without_clk_'+wire_mode+'/'+file_name.split('_revised')[0]+'.json'
         list_of_last_nodes=dict()
         with open (file_pathpath,'r') as ff:
             delay_without_clk_All=json.load(ff)
 
 
-        file_pathpath='temp_for_clk_scratch.json'
+        file_pathpath='../data/deflef_to_graph_and_verilog/results/'+file_address_name+'/test_7800_zfor_clk_'+wire_mode+'/'+file_name.split('_revised')[0]+'.json'
         with open (file_pathpath,'r') as ff:
             clk_All=json.load(ff)
     else:
-        file_pathpath='temp_3_random_50.json'
+        file_pathpath='../data/deflef_to_graph_and_verilog/results/'+file_address_name+'/test_7800_without_clk_'+wire_mode+'/'+file_name.split('_revised')[0]+'.json'
         list_of_last_nodes=dict()
         with open (file_pathpath,'r') as ff:
             delay_without_clk_All=json.load(ff)
 
 
-        file_pathpath='temp_for_clk_3_random_50.json'
+        file_pathpath='../data/deflef_to_graph_and_verilog/results/'+file_address_name+'/test_7800_zfor_clk_'+wire_mode+'/'+file_name.split('_revised')[0]+'.json'
         with open (file_pathpath,'r') as ff:
             clk_All=json.load(ff)
     

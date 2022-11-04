@@ -1314,6 +1314,8 @@ if __name__ == "__main__":
         json.dump(stage_All_clk,f,indent=4)
     
     print(file_name.split('_revised')[0]+'.json')
+    print(wire_mode)
+    print()
     print()
     print()
 
