@@ -20,14 +20,13 @@ def get_file_and_make_directory(wiremode,file_type):
         if defdef=='break':
             break
 
-        if wiremode=='star':
+        '''if wiremode=='star':
             os.system('python3 0_revise_def_file.py '+defdef)
             os.system('python3 1_test.py '+defdef)
             os.system('python3 2_for_modifying_graph.py '+defdef+' '+wiremode+' '+file_type) 
         else:
-            os.system('python3 2_for_modifying_graph.py '+defdef+' '+wiremode+' '+file_type)
-
-
+            os.system('python3 2_for_modifying_graph.py '+defdef+' '+wiremode+' '+file_type)'''
+        os.system('python3 CTS.py '+defdef+' '+wiremode+' '+file_type)
         idx=idx+1
 
     return 0
@@ -157,6 +156,7 @@ def get_target_name(checking,number):
 
 def get_file_name(checking,number):
     
+
     file_name_of_path=str()
     if checking=='bank':
         file_name_of_path=str(number)+'bank_detailed'
@@ -205,17 +205,17 @@ def get_file_name(checking,number):
     if (number==103 and (checking=='Rbank' or checking=='Rbank2')):
         strstr='break'
 
+
     return [file_name_of_path,strstr]
 
 
 
 if __name__ == "__main__":
     listlist=list()
-
     if_not_zero=sys.argv[1]
 
-    deflist=['a1_bank']
-    wire_mod=['star','hpwl','clique']
+    deflist=['bank','rbank','random','random3','Random','Random2','Random2_detailed','a1_bank','a1_rbank','a2_bank','a2_rbank','Rbank','Rbank2']
+    wire_mod=['star']
 
     for kkiiddxx in range(len(deflist)):
         get_def_files(deflist[kkiiddxx])

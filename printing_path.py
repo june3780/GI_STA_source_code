@@ -7,6 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from pylab import rcParams
 import os
+import shutil
 
 def get_delay_path(wirewire,checking,number):
 
@@ -356,6 +357,8 @@ def get_net_info(checking,number):
 
 
 def get_file_name(checking,number):
+
+
     file_name_of_path=str()
     if checking=='bank':
         file_name_of_path=str(number)+'bank_detailed'
@@ -383,6 +386,7 @@ def get_file_name(checking,number):
         file_name_of_path='Random1103_oneiter_'+str(number)+'_detailed'
     elif checking=='Random2_detailed':
         file_name_of_path='Random1103_oneiter_'+str(number)+'_detailed_detailed'
+
 
     strstr=str()
     if checking=='bank' and (number==25 or number==83):
@@ -424,10 +428,14 @@ if __name__ == "__main__":
             ttt=ttt+1
     if ttt==0:
         scratch_value=float()
+        list_name=str()
         for idxx in range(int(sys.argv[2])):
             aaa=dict()
 
             searching=sys.argv[idxx+3]
+            
+            addressadd='../data/deflef_to_graph_and_verilog/results/'+searching+'/test_7800_'+wire_mod+'/path_compare.dat'
+            shutil.copyfile(addressadd,'../data/7809cells_groups/results/paths/'+searching+'_'+wire_mod+'_path_compare.dat')
 
             file_saved_table='../data/deflef_to_graph_and_verilog/results/'+searching+'/test_7800_'+wire_mod
             table_npy=np.load(file_saved_table+'/worst_path_group_of_a_def.npy')
@@ -435,15 +443,16 @@ if __name__ == "__main__":
             with open(file_saved_table+'/worst_path_group_of_a_def.json', 'r') as file:
                 aaa=json.load(file)
 
-
             if sys.argv[-1]!='Pass':
                 plt.plot(aaa['data'], table_npy,color=get_colors(idxx)[1],label=aaa['label'])
             scratch_value=aaa['scratch_line']
-
+            list_name=list_name+' '+sys.argv[idxx+3]
+        list_name=list_name.strip()
         if sys.argv[-1]!='Pass':
             plt.axvline(x=scratch_value,color='k')
             plt.xlabel(wire_mod)
             plt.legend()
+            plt.savefig('../data/7809cells_groups/results/'+list_name+'_'+wire_mod+'.png', dpi=400)
             plt.show()
             plt.close()
 

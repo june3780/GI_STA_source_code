@@ -971,15 +971,10 @@ def get_clk_partitioning(clk_All,die_area,def_unit):
         All[ivalue]['position'][0]=All[ivalue]['position'][0]/def_unit
         All[ivalue]['position'][1]=All[ivalue]['position'][1]/def_unit
     
-
-
-    ##print(All['PIN clk'])
-    ##print(die_area)
-
-
     start_line1=[[die_area[0][0],die_area[1][1]],[die_area[1][0],die_area[1][1]]]
     start_line2=[[die_area[1][0],die_area[0][1]],[die_area[1][0],die_area[1][1]]]
     first_square=copy.deepcopy(All)
+    Clk_pos=first_square['PIN clk']['position']
     del first_square['PIN clk']
 
 
@@ -992,10 +987,6 @@ def get_clk_partitioning(clk_All,die_area,def_unit):
     yshouldbelow=int()
     start_line1_x=copy.deepcopy(start_line1)
     start_line1_y=copy.deepcopy(start_line2)
-
-    print(start_line1_x)
-    print(start_line1_y)
-    print()
 
 
     half_line_x=get_half_line(start_line1_x,first_square,'x')
@@ -1013,154 +1004,284 @@ def get_clk_partitioning(clk_All,die_area,def_unit):
 
 
     paralleltoaxis=str()
-
-
     second_square1=dict()
     second_square2=dict()
     if xshouldbelow==0 and yshouldbelow==0:
+
         candidate_counts1=float()
-        candidate_counts2=float()
+        distance_to_parallel_yaxis=abs(appropriate_line_y[0][0]-Clk_pos[0])
+        distance_to_parallel_xaxis=abs(appropriate_line_x[0][1]-Clk_pos[1])
 
         if distance_to_parallel_yaxis<distance_to_parallel_xaxis:
             appropriate_first_line=appropriate_line_y
             paralleltoaxis='y'
+            for allidx,allivalue in enumerate(first_square):
+                if first_square[allivalue]['position'][0]>appropriate_first_line[0][0]:
+                    second_square1.update({allivalue:first_square[allivalue]})
+                else:
+                    second_square2.update({allivalue:first_square[allivalue]})
 
         else: 
             appropriate_first_line=appropriate_line_x
             paralleltoaxis='x'
+            for allidx,allivalue in enumerate(first_square):
+                if first_square[allivalue]['position'][1]>appropriate_first_line[0][1]:
+                    second_square1.update({allivalue:first_square[allivalue]})
+                else:
+                    second_square2.update({allivalue:first_square[allivalue]})
+
 
     elif xshouldbelow==1 and yshouldbelow==0:
 
-################################################################################################################ 이어서 하자
-        testing_second_square1=dict()
-        testing_second_square2=dict()
-        candidate_counts1=float()
-        candidate_counts2=float()
-        objective_counts=int()
-
-        testing_first_square=copy.deepcopy(first_square)
-        if get_number(half_line_x[0],first_square)[2]==1:
-            objective_counts=get_number(half_line_x[0],first_square)[1]-get_number(half_line_x[0],first_square)[0]-1
-        else:
-            objective_counts=get_number(half_line_x[0],first_square)[1]-get_number(half_line_x[0],first_square)[0]
-        
-
-
-        testing_half_xxx=copy.deepcopy(half_line_x)
-
-        max_along_less_y=float()
-        latest_del_in_testing_second_square2=list()
-
-        objective_counts=100
-
-        while True:
-            print('juenujefasfg')
-            print(objective_counts)
-            will_del_in_testing_second_square2=list()
-
-            for ivalueivalue in first_square:
-                if first_square[ivalueivalue]['position'][1]<testing_half_xxx[0][0][1]:
-                    testing_second_square2.update({ivalueivalue:first_square[ivalueivalue]})
-                    if max_along_less_y<first_square[ivalueivalue]['position'][1]:
-                        max_along_less_y=first_square[ivalueivalue]['position'][1]
-            print(max_along_less_y)
-            print(testing_half_xxx)
-
-            couldbe_next_line=[[[testing_half_xxx[0][0][0],(testing_half_xxx[0][0][1]+max_along_less_y)/2],\
-                [testing_half_xxx[0][1][0],(testing_half_xxx[0][1][1]+max_along_less_y)/2]],testing_half_xxx[1]]
-            print(couldbe_next_line)
-
-            disdis=testing_half_xxx[0][1][1]-max_along_less_y
-
-            for ivalueivalue in testing_first_square:
-                if ivalueivalue in testing_second_square2:
-                    if  testing_first_square[ivalueivalue]['position'][1]==max_along_less_y:
-                            will_del_in_testing_second_square2.append(ivalueivalue)
-                            latest_del_in_testing_second_square2.append(ivalueivalue)
-            
-
-            if objective_counts==len(will_del_in_testing_second_square2):
-                break
-
-            elif objective_counts<len(will_del_in_testing_second_square2):
-                candidate_counts1=candidate_counts1+disdis*objective_counts
-
-                max_xvalue=float()
-                for kvalue in will_del_in_testing_second_square2:
-                    if max_xvalue<first_square[kvalue]['position'][0]:
-                        max_xvalue=first_square[kvalue]['position'][0]
-                print(objective_counts)
-                print('tpgmlwnstpgmlwnstpmlwns1!')
-                break
-            else:
-                print('june3780')
-                objective_counts=objective_counts-len(will_del_in_testing_second_square2)
-                print('qwetreqwerqewr')
-                print(objective_counts)
-                candidate_counts1=candidate_counts1+disdis*len(will_del_in_testing_second_square2)
-                testing_half_xxx=couldbe_next_line
-                continue
-
-        print('tpgmlwns1!')
-        print(latest_del_in_testing_second_square2)
-        print(candidate_counts1)
-
-        
-        
-
-
-###############################################################################################################
-
         appropriate_first_line=appropriate_line_y
         for allidx,allivalue in enumerate(first_square):
-            if first_square[allivalue]['position'][0]<appropriate_first_line[0][0]:
+            if first_square[allivalue]['position'][0]>appropriate_first_line[0][0]:
                 second_square1.update({allivalue:first_square[allivalue]})
             else:
                 second_square2.update({allivalue:first_square[allivalue]})
         paralleltoaxis='y'
+    
 
     elif xshouldbelow==0 and yshouldbelow==1:
+
         appropriate_first_line=appropriate_line_x
         for allidx,allivalue in enumerate(first_square):
-            if first_square[allivalue]['position'][1]<appropriate_first_line[0][1]:
+            
+            if first_square[allivalue]['position'][1]>appropriate_first_line[0][1]:
                 second_square1.update({allivalue:first_square[allivalue]})
             else:
                 second_square2.update({allivalue:first_square[allivalue]})
         paralleltoaxis='x'
 
+
     if xshouldbelow==1 and yshouldbelow==1:
-        print(half_line_x)
-        print()
-        print(All['PIN clk'])
-        distance_to_parallel_yaxis=abs(appropriate_line_y[0][0]-All['PIN clk']['position'][0])
 
-        distance_to_parallel_xaxis=abs(appropriate_line_x[0][1]-All['PIN clk']['position'][1])
+        if get_temporary_line(half_line_x,first_square,'x')[1]<get_temporary_line(half_line_y,first_square,'y')[1]:
 
-        if distance_to_parallel_yaxis<distance_to_parallel_xaxis:
-            appropriate_first_line=appropriate_line_y
+            comparing_float=half_line_x[0][0][1]
             for allidx,allivalue in enumerate(first_square):
-                if first_square[allivalue]['position'][0]<appropriate_first_line[0][0]:
+                if first_square[allivalue]['position'][1]>comparing_float:
                     second_square1.update({allivalue:first_square[allivalue]})
                 else:
                     second_square2.update({allivalue:first_square[allivalue]})
-            paralleltoaxis='y'
-        else: 
-            appropriate_first_line=appropriate_line_x
-            for allidx,allivalue in enumerate(first_square):
-                if first_square[allivalue]['position'][0]<appropriate_first_line[0][0]:
-                    second_square1.update({allivalue:first_square[allivalue]})
-                else:
-                    second_square2.update({allivalue:first_square[allivalue]})
+
             paralleltoaxis='x'
+            switching_list=get_temporary_line(half_line_x,first_square,'x')[0]
+
+            for allidx in range(len(switching_list)):
+                second_square1.update({switching_list[allidx]:second_square2[switching_list[allidx]]})
+                second_square2.pop(switching_list[allidx])
+
+        
+        else:
+
+            comparing_float=half_line_y[0][0][0]
+            for allidx,allivalue in enumerate(first_square):
+                if first_square[allivalue]['position'][0]>comparing_float:
+                    second_square1.update({allivalue:first_square[allivalue]})
+                else:
+                    second_square2.update({allivalue:first_square[allivalue]})
+
+            paralleltoaxis='y'
+            switching_list=get_temporary_line(half_line_y,first_square,'y')[0]
+            for allidx in range(len(switching_list)):
+                second_square1.update({switching_list[allidx]:second_square2[switching_list[allidx]]})
+                second_square2.pop(switching_list[allidx])
+
+    square_for_1=copy.deepcopy(first_square)
+    square_for_2=copy.deepcopy(first_square)
+
+    for allivalue in second_square2:
+        if allivalue in square_for_1:
+            del square_for_1[allivalue]
+
+    for allivalue in second_square1:
+        if allivalue in square_for_2:
+            del square_for_2[allivalue]
+
+    buffer_list=dict()
+    buffer_list.update({'temp_buffer0':{'from':['PIN clk'],'to':[],'position':[]}})
+    return [second_square1,second_square2,paralleltoaxis,square_for_1,square_for_2,buffer_list]
 
 
-    print(appropriate_first_line)
-    print(paralleltoaxis)
-    print(All['PIN clk']['position'])
-    print(len(second_square1))
-    print(len(second_square2))
-    print(len(first_square))
+
+
+
+
+
+
+
+def get_small_groups(number,second_square):
+
+    buffer_list=second_square[5]
+    
+    print(len(second_square[0]),len(second_square[1]),second_square[2])
+    second_square1=second_square[0]
+    second_square2=second_square[1]
+    square_info_for_1=second_square[3]
+    square_info_for_2=second_square[4]
+    hpwl1=get_hpwl_square(second_square1,square_info_for_1)
+    hpwl2=get_hpwl_square(second_square2,square_info_for_2)
+
+    xxxxxx=int()
+
+    test_line=list()
+
+    if second_square[2]=='y':
+        test_line111=[[hpwl1[1][0]+1,hpwl1[0][1]-1],[hpwl1[1][0]+1,hpwl1[1][1]+1]]
+        test_line222=[[hpwl2[1][0]+1,hpwl2[0][1]-1],[hpwl2[1][0]+1,hpwl2[1][1]+1]]
+    else:
+        test_line111=[[hpwl1[0][0]-1,hpwl1[1][1]+1],[hpwl1[1][0]+1,hpwl1[1][1]+1]]
+        test_line222=[[hpwl2[0][0]-1,hpwl2[1][1]+1],[hpwl2[1][0]+1,hpwl2[1][1]+1]]
+
+
+    test_line111=get_half_line(test_line111,square_info_for_1,second_square[2])[0]
+
+    if get_half_line(test_line111,square_info_for_1,second_square[2])[1]==1:
+        print('success')
+
+
+
+
+
+    test_line222=get_half_line(test_line222,square_info_for_2,second_square[2])[0]
+
+
+
+
     return 0
+
+
+
+
+
+
+
+
+
+
+
+def get_hpwl_square(square,info):
+    max_x_in_second_square1=float()
+    max_y_in_second_square1=float()
+    min_x_in_second_square1=float()
+    min_y_in_second_square1=float()
+    for ivalue in (square):
+        if max_x_in_second_square1 <info[ivalue]['position'][0]:
+            max_x_in_second_square1=info[ivalue]['position'][0]
+        if max_y_in_second_square1 <info[ivalue]['position'][1]:
+            max_y_in_second_square1=info[ivalue]['position'][1]
+    min_x_in_second_square1=max_x_in_second_square1
+    min_y_in_second_square1=max_y_in_second_square1
+    for ivalue in (square):
+        if min_x_in_second_square1 >info[ivalue]['position'][0]:
+            min_x_in_second_square1=info[ivalue]['position'][0]
+        if min_y_in_second_square1 >info[ivalue]['position'][1]:
+            min_y_in_second_square1=info[ivalue]['position'][1]
+
+    return [[min_x_in_second_square1,min_y_in_second_square1],[max_x_in_second_square1,max_y_in_second_square1]]
+
+
+
+
+
+
+
+
+def get_temporary_line(line_x,square,xory):
+    testing_second_square1=dict()
+    testing_second_square2=dict()
+    candidate_counts1=float()
+    candidate_counts2=float()
+    objective_counts=int()
+
+    testing_first_square=copy.deepcopy(square)
+
+    if get_number(line_x[0],square)[2]==1:
+        objective_counts=get_number(line_x[0],square)[1]-get_number(line_x[0],square)[0]-1
+    else:
+        objective_counts=get_number(line_x[0],square)[1]-get_number(line_x[0],square)[0]
+
+
+    testing_half_xxx=copy.deepcopy(line_x)
+
+    max_along_less_y=float()
+    latest_del_in_testing_second_square2=list()
+
+    while True:
+        will_del_in_testing_second_square2=list()
+
+        for ivalueivalue in square:
+            if xory=='x':
+                if square[ivalueivalue]['position'][1]<testing_half_xxx[0][0][1]:
+                    if max_along_less_y<square[ivalueivalue]['position'][1]:
+                        max_along_less_y=square[ivalueivalue]['position'][1]
+            else:
+                if square[ivalueivalue]['position'][0]<testing_half_xxx[0][0][0]:
+                    if max_along_less_y<square[ivalueivalue]['position'][0]:
+                        max_along_less_y=square[ivalueivalue]['position'][0]             
+
+        for ivalueivalue in square:
+            if xory=='x':
+                if square[ivalueivalue]['position'][1]==max_along_less_y:
+                    will_del_in_testing_second_square2.append(ivalueivalue)
+            else:
+                if square[ivalueivalue]['position'][0]==max_along_less_y:
+                    will_del_in_testing_second_square2.append(ivalueivalue)
+
+
+        couldbe_next_line=list()
+        disdis=float()
+        if xory=='x':
+            couldbe_next_line=[[[testing_half_xxx[0][0][0],(testing_half_xxx[0][0][1]+max_along_less_y)/2],\
+                [testing_half_xxx[0][1][0],(testing_half_xxx[0][1][1]+max_along_less_y)/2]],testing_half_xxx[1]]
+            disdis=testing_half_xxx[0][1][1]-max_along_less_y
+        else:
+            couldbe_next_line=[[[testing_half_xxx[0][0][1],(testing_half_xxx[0][0][0]+max_along_less_y)/2],\
+                [testing_half_xxx[0][1][1],(testing_half_xxx[0][1][0]+max_along_less_y)/2]],testing_half_xxx[1]]
+            disdis=testing_half_xxx[0][1][0]-max_along_less_y
+
+        
+        
+
+        if objective_counts==len(will_del_in_testing_second_square2):
+            for ttddxx in range(len(will_del_in_testing_second_square2)):
+                latest_del_in_testing_second_square2.append(will_del_in_testing_second_square2[ttddxx])
+            break
+
+        elif objective_counts<len(will_del_in_testing_second_square2):
+            candidate_counts1=candidate_counts1+disdis*objective_counts
+
+            listlist=list()
+            for kvalue in will_del_in_testing_second_square2:
+                if xory=='x':
+                    listlist.append([kvalue,square[kvalue]['position'][0]])
+                else:
+                    listlist.append([kvalue,square[kvalue]['position'][1]])
+
+            for ktdx in range(len(listlist)):
+                for tdx in range(len(listlist)):
+                    if tdx ==0:
+                        continue
+                    elif listlist[tdx][1]<listlist[tdx-1][1]:
+                        temp=list()
+                        temp=copy.deepcopy(listlist[tdx])
+                        listlist[tdx]=copy.deepcopy(listlist[tdx-1])
+                        listlist[tdx-1]=copy.deepcopy(temp)
+
+            for tdx in range(objective_counts):
+                latest_del_in_testing_second_square2.append(listlist[tdx][0])
+            break
+
+        else:
+            objective_counts=objective_counts-len(will_del_in_testing_second_square2)
+            for kvalue in will_del_in_testing_second_square2:
+                latest_del_in_testing_second_square2.append(kvalue)
+            candidate_counts1=candidate_counts1+disdis*len(will_del_in_testing_second_square2)
+            testing_half_xxx=copy.deepcopy(couldbe_next_line)
+            continue
+
+    return [latest_del_in_testing_second_square2,candidate_counts1]
 
 
 
@@ -1188,6 +1309,7 @@ def get_half_line(start_line1_x,first_square,xory):
                 if_the_line_is_half[0][1]=if_the_line_is_half[0][1]-beta
                 if_the_line_is_half[1][1]=if_the_line_is_half[1][1]-beta
             else:
+                
                 if_the_line_is_half[0][0]=if_the_line_is_half[0][0]-beta
                 if_the_line_is_half[1][0]=if_the_line_is_half[1][0]-beta   
         elif get_number(if_the_line_is_half,first_square)[0]>get_number(if_the_line_is_half,first_square)[1]:
@@ -1247,7 +1369,7 @@ def get_number(line,squares):
     target_number2=int()
 
     if tt%2==0:
-        target_number=tt/2
+        target_number=int(tt/2)
         odd_number=0
 
     else:
@@ -1483,3 +1605,5 @@ if __name__ == "__main__":
     ##print(outnodes)
 
     parts_clk_all=get_clk_partitioning(clk_All,die_area,def_unit)
+
+    get_small_groups(0,parts_clk_all)
