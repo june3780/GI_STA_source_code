@@ -375,13 +375,14 @@ def get_new_stage_nodes(TAll):
         All[ivalue]['stage']=[None,None]
         if len(All[ivalue]['from'])==0:
             All[ivalue]['stage']=[0,'OUTPUT']
+
     
 
     for idx,ivalue in enumerate(All):
         if All[ivalue]['stage']==[0,'OUTPUT']:
             for kdx in range(len(All[ivalue]['to'])):
                 All[All[ivalue]['to'][kdx]]['stage']=[0,'INPUT']
-    
+
 
     current_stage=1
     while True:
@@ -414,10 +415,10 @@ def get_new_stage_nodes(TAll):
 
         if rrr==0:
             break
-
         else:
             current_stage=current_stage+1
             continue
+
 
     return All
 
@@ -1140,17 +1141,69 @@ def get_small_groups(second_square):
 
 
 def get_group_of_buffer(part_of_clk):
-    first_buffer=part_of_clk[5]
-    ##print(first_buffer)
-
     kk=dict()
-    ##kk={'june3780':'tpgmlwns1!'}
+
     number=1
     kkkk=get_segment_squares(part_of_clk[0:5],kk,number)
-    ##print()
-    ##print('tpgmlwnstpmlwwngsdge1!')
-    ##print(len(kkkk))
+    tttt=copy.deepcopy(kkkk)
+
+
+    naming_dict=dict()
+    for idx, ivalue in enumerate(kkkk):
+        naming_dict.update({ivalue:'temp_buffer_'+str(idx)})
+
+
+    for ivalue in tttt:
+        if ivalue in naming_dict:
+            kkkk.update({naming_dict[ivalue]:kkkk[ivalue]})
+            del kkkk[ivalue]
+
+    tttt=copy.deepcopy(kkkk)
+
+    for ivalue in tttt:
+        for kdx in range(len(tttt[ivalue]['to'])):
+            if len(tttt[ivalue]['to'][kdx].split('CK'))==2:
+                kkkk[ivalue]['to'][kdx]=kkkk[ivalue]['to'][kdx].split('[\'')[1].split('\']')[0]
+                continue
+            kkkk[ivalue]['to'][kdx]=naming_dict[kkkk[ivalue]['to'][kdx]]
+
+    tttt=copy.deepcopy(kkkk)
+    
+    for ivalue in tttt:
+        for kvalue in tttt:
+            if ivalue in tttt[kvalue]['to']:
+                kkkk[ivalue]['from']=[kvalue]
+
+    tttt=copy.deepcopy(kkkk)
+
+    for ivalue in tttt:
+        kkkk.update({ivalue+' A':{'type':'cell','direction':'INPUT','to':[ivalue+' Z'],'from':tttt[ivalue]['from'],'macroID':'CLKBUF_X1','cell_type':'Combinational'}})
+        kkkk.update({ivalue+' Z':{'type':'cell','direction':'OUTPUT','to':tttt[ivalue]['to'],'from':[ivalue+' A'],'macroID':'CLKBUF_X1','cell_type':'Combinational'}})
+        del kkkk[ivalue]
+
+    for ivalue in kkkk:
+        if 'Z' in ivalue:
+            for kdx in range(len(kkkk[ivalue]['to'])):
+                if 'CK' not in kkkk[ivalue]['to'][kdx]:
+                    kkkk[ivalue]['to'][kdx]=kkkk[ivalue]['to'][kdx]+' A'
+        if 'A' in ivalue:
+            for kdx in range(len(kkkk[ivalue]['from'])):
+                kkkk[ivalue]['from'][kdx]=kkkk[ivalue]['from'][kdx]+' Z'
+    
+    connecting=str()
+    for ivalue in kkkk:
+        if len(kkkk[ivalue]['from'])==0:
+            connecting=ivalue
+
+    kkkk.update({'temp_clk_buffer A':{'type': 'cell', 'direction': 'INPUT', 'to': ['temp_clk_buffer Z'],'from':['PIN clk'], 'macroID': 'CLKBUF_X1', 'cell_type': 'Combinational'}})
+    kkkk.update({'temp_clk_buffer Z':{'type': 'cell', 'direction': 'OUTPUT', 'to': [connecting],'from':['temp_clk_buffer A'], 'macroID': 'CLKBUF_X1', 'cell_type': 'Combinational'}})
+    kkkk['temp_buffer_0 A']['from']=['temp_clk_buffer Z']
     return kkkk
+
+
+
+
+
 
 def get_segment_squares(square,kk,number):
     name_of_dict=list()
@@ -1160,10 +1213,6 @@ def get_segment_squares(square,kk,number):
         name_of_dict.append(ivalue)
 
     if len(square[3])>=number and len(square[4])>=number:
-        ##print()
-        ##print(len(square[3]),get_hpwl_square(square[0],square[3])[1][0]-get_hpwl_square(square[0],square[3])[0][0]+get_hpwl_square(square[0],square[3])[1][1]-get_hpwl_square(square[0],square[3])[0][1])
-        ##print(len(square[4]),get_hpwl_square(square[1],square[4])[1][0]-get_hpwl_square(square[1],square[4])[0][0]+get_hpwl_square(square[1],square[4])[1][1]-get_hpwl_square(square[1],square[4])[0][1])
-        ##print()
         square1=get_small_groups(square)[0]
         square2=get_small_groups(square)[1]
 
@@ -1592,6 +1641,43 @@ def descending_find_line(line,square,alpha,xory):
 
 
 
+def get_stage_with_CTS(clk, cts):
+    for ivalue in clk:
+        clk[ivalue]['from']=list()
+        del clk[ivalue]['stage']
+    clk['PIN clk']['to']=list()
+    clk['PIN clk']['wire_length_hpwl']=float()
+    clk['PIN clk']['wire_length_star']=float()
+    clk['PIN clk']['wire_length_clique']=float()
+    clk['PIN clk']['position']=list()
+    
+    for ivalue in cts:
+
+        if cts[ivalue]['from'][0]=='PIN clk':
+            clk['PIN clk']['to']=[ivalue]
+        for jdx in range(len(cts[ivalue]['to'])):
+            for kvalue in clk:
+                if kvalue in cts[ivalue]['to'][jdx]:
+                    clk[kvalue]['from']=[ivalue]
+
+
+    cts.update(clk)
+
+
+    
+    All=get_new_stage_nodes(cts)
+
+    return All
+
+
+
+
+
+
+
+
+
+
 
 if __name__ == "__main__":
     arguments=sys.argv
@@ -1733,16 +1819,47 @@ if __name__ == "__main__":
     print()'''
     ##print(outnodes)
 
+
+
     parts_clk_all=get_clk_partitioning(clk_All,die_area,def_unit)
     ##print()
     ##print(sys.argv)
-    start=time.time()
-    lalala=len(get_group_of_buffer(parts_clk_all))
-    end_time=time.time()-start
-    
-    if lalala !=2198:
-        print('ERROROROROROROOR')
-        print(sys.argv)
-        print(lalala)
-        print('time :',end_time)
-        print()
+    temp_buffer_tree=get_group_of_buffer(parts_clk_all)
+    CTS_stage_All=get_stage_with_CTS(clk_All,temp_buffer_tree)
+
+    ttt=int()
+    for iiiddd in range(16):
+        for stagess in range(16):
+            checking=iiiddd
+
+
+
+
+            checking=checking+1
+
+            nununu=stagess+1
+
+
+
+            if stagess==checking:
+                print()
+                print(kkk)
+                ttt=ttt+kkk
+                break
+            kkk=int()
+            for ivalue in CTS_stage_All:
+                if CTS_stage_All[ivalue]['stage'][0]==stagess:
+                    kkk=kkk+1
+                    if nununu==checking:
+                        print(ivalue, CTS_stage_All[ivalue])
+            else:
+                continue
+    print()
+    print('tpgmlwns1!')
+    print(ttt)
+    rrr=int()
+    for jdvalue in CTS_stage_All:
+        rrr=rrr+1
+    print(rrr)
+
+
