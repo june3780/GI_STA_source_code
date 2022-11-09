@@ -12,7 +12,7 @@ import pandas as pd
 import time
 import sys
 
-
+import time
 
 
 
@@ -1100,7 +1100,7 @@ def get_clk_partitioning(clk_All,die_area,def_unit):
             del square_for_2[allivalue]
 
     buffer_list=dict()
-    buffer_list.update({'temp_buffer0':{'from':['PIN clk'],'to':[],'position':[]}})
+    buffer_list.update({'temp_buffer0_0':{'from':['PIN clk'],'to':[],'position':[]}})
     return [second_square1,second_square2,paralleltoaxis,square_for_1,square_for_2,buffer_list]
 
 
@@ -1109,13 +1109,8 @@ def get_clk_partitioning(clk_All,die_area,def_unit):
 
 
 
+def get_small_groups(second_square):
 
-
-def get_small_groups(number,second_square):
-
-    buffer_list=second_square[5]
-    
-    print(len(second_square[0]),len(second_square[1]),second_square[2])
     second_square1=second_square[0]
     second_square2=second_square[1]
     square_info_for_1=second_square[3]
@@ -1123,34 +1118,173 @@ def get_small_groups(number,second_square):
     hpwl1=get_hpwl_square(second_square1,square_info_for_1)
     hpwl2=get_hpwl_square(second_square2,square_info_for_2)
 
-    xxxxxx=int()
-
-    test_line=list()
 
     if second_square[2]=='y':
-        test_line111=[[hpwl1[1][0]+1,hpwl1[0][1]-1],[hpwl1[1][0]+1,hpwl1[1][1]+1]]
-        test_line222=[[hpwl2[1][0]+1,hpwl2[0][1]-1],[hpwl2[1][0]+1,hpwl2[1][1]+1]]
-    else:
         test_line111=[[hpwl1[0][0]-1,hpwl1[1][1]+1],[hpwl1[1][0]+1,hpwl1[1][1]+1]]
         test_line222=[[hpwl2[0][0]-1,hpwl2[1][1]+1],[hpwl2[1][0]+1,hpwl2[1][1]+1]]
+        second_square[2]='x'
+    else:
+        test_line111=[[hpwl1[1][0]+1,hpwl1[0][1]-1],[hpwl1[1][0]+1,hpwl1[1][1]+1]]
+        test_line222=[[hpwl2[1][0]+1,hpwl2[0][1]-1],[hpwl2[1][0]+1,hpwl2[1][1]+1]]
+        second_square[2]='y'
 
 
-    test_line111=get_half_line(test_line111,square_info_for_1,second_square[2])[0]
-
-    if get_half_line(test_line111,square_info_for_1,second_square[2])[1]==1:
-        print('success')
-
-
-
-
-
-    test_line222=get_half_line(test_line222,square_info_for_2,second_square[2])[0]
-
+    xxxxxx=get_small_square_partitioning(square_info_for_1,test_line111,second_square[2])
+    yyyyyy=get_small_square_partitioning(square_info_for_2,test_line222,second_square[2])
+    return [xxxxxx,yyyyyy]
 
 
 
-    return 0
 
+
+
+
+def get_group_of_buffer(part_of_clk):
+    first_buffer=part_of_clk[5]
+    ##print(first_buffer)
+
+    kk=dict()
+    ##kk={'june3780':'tpgmlwns1!'}
+    number=1
+    kkkk=get_segment_squares(part_of_clk[0:5],kk,number)
+    ##print()
+    ##print('tpgmlwnstpmlwwngsdge1!')
+    ##print(len(kkkk))
+    return kkkk
+
+def get_segment_squares(square,kk,number):
+    name_of_dict=list()
+    for ivalue in list(square[0].keys()):
+        name_of_dict.append(ivalue)
+    for ivalue in list(square[1].keys()):
+        name_of_dict.append(ivalue)
+
+    if len(square[3])>=number and len(square[4])>=number:
+        ##print()
+        ##print(len(square[3]),get_hpwl_square(square[0],square[3])[1][0]-get_hpwl_square(square[0],square[3])[0][0]+get_hpwl_square(square[0],square[3])[1][1]-get_hpwl_square(square[0],square[3])[0][1])
+        ##print(len(square[4]),get_hpwl_square(square[1],square[4])[1][0]-get_hpwl_square(square[1],square[4])[0][0]+get_hpwl_square(square[1],square[4])[1][1]-get_hpwl_square(square[1],square[4])[0][1])
+        ##print()
+        square1=get_small_groups(square)[0]
+        square2=get_small_groups(square)[1]
+
+        name_of_dic1t=list()
+        for ivalue in list(square1[0].keys()):
+            name_of_dic1t.append(ivalue)
+        for ivalue in list(square1[1].keys()):
+            name_of_dic1t.append(ivalue)
+
+        name_of_dic2t=list()
+        for ivalue in list(square2[0].keys()):
+            name_of_dic2t.append(ivalue)
+        for ivalue in list(square2[1].keys()):
+            name_of_dic2t.append(ivalue)
+
+
+        kk.update({str(name_of_dict):{'to':[str(name_of_dic1t),str(name_of_dic2t)],'from':[]}})
+
+        get_segment_squares(square1,kk,number)
+        get_segment_squares(square2,kk,number)
+        
+        return kk
+    else:
+        return kk
+
+
+
+
+
+
+def get_small_square_partitioning(square_info,line,xory):
+
+#######################################################################################################
+    appropriate_first_line=list()
+
+    xshouldbelow=int()
+    yshouldbelow=int()
+    start_line1=copy.deepcopy(line)
+
+    half_line=get_half_line(start_line1,square_info,xory)
+
+    if half_line[1]==1:
+        appropriate_first_line=half_line[0]
+    else:
+        if xory=='x':
+            yshouldbelow=1 ############################## y가 낮아져서 count수를 늘려야 된다.
+        else:
+            xshouldbelow=1 ############################## x가 낮아져서 count수를 늘려야 한다.
+
+
+
+    paralleltoaxis=str()
+    second_square1=dict()
+    second_square2=dict()
+
+    if xshouldbelow==1 and yshouldbelow==0:
+
+            comparing_float=half_line[0][0][0]
+            for allidx,allivalue in enumerate(square_info):
+                if square_info[allivalue]['position'][0]>comparing_float:
+                    second_square1.update({allivalue:square_info[allivalue]})
+                else:
+                    second_square2.update({allivalue:square_info[allivalue]})
+
+
+            paralleltoaxis='y'
+            switching_list=get_temporary_line(half_line,square_info,'y')[0]
+            for allidx in range(len(switching_list)):
+                second_square1.update({switching_list[allidx]:second_square2[switching_list[allidx]]})
+                second_square2.pop(switching_list[allidx])
+    
+
+    elif xshouldbelow==0 and yshouldbelow==1:
+
+            comparing_float=half_line[0][0][1]
+            for allidx,allivalue in enumerate(square_info):
+                if square_info[allivalue]['position'][1]>comparing_float:
+                    second_square1.update({allivalue:square_info[allivalue]})
+                else:
+                    second_square2.update({allivalue:square_info[allivalue]})
+
+
+            paralleltoaxis='x'
+            switching_list=get_temporary_line(half_line,square_info,'x')[0]
+            for allidx in range(len(switching_list)):
+                second_square1.update({switching_list[allidx]:second_square2[switching_list[allidx]]})
+                second_square2.pop(switching_list[allidx])
+
+    
+    else:
+        paralleltoaxis=xory
+        if xory=='x':
+            for allidx,allivalue in enumerate(square_info):
+                if square_info[allivalue]['position'][1]>appropriate_first_line[0][1]:
+                    second_square1.update({allivalue:square_info[allivalue]})
+                else:
+                    second_square2.update({allivalue:square_info[allivalue]})
+
+        else: 
+            for allidx,allivalue in enumerate(square_info):
+                if square_info[allivalue]['position'][0]>appropriate_first_line[0][0]:
+                    second_square1.update({allivalue:square_info[allivalue]})
+                else:
+                    second_square2.update({allivalue:square_info[allivalue]})
+
+
+
+
+    square_for_1=copy.deepcopy(square_info)
+    square_for_2=copy.deepcopy(square_info)
+
+    for allivalue in second_square2:
+        if allivalue in square_for_1:
+            del square_for_1[allivalue]
+
+    for allivalue in second_square1:
+        if allivalue in square_for_2:
+            del square_for_2[allivalue]
+
+
+    return [second_square1,second_square2,paralleltoaxis,square_for_1,square_for_2]
 
 
 
@@ -1189,13 +1323,8 @@ def get_hpwl_square(square,info):
 
 
 def get_temporary_line(line_x,square,xory):
-    testing_second_square1=dict()
-    testing_second_square2=dict()
     candidate_counts1=float()
-    candidate_counts2=float()
     objective_counts=int()
-
-    testing_first_square=copy.deepcopy(square)
 
     if get_number(line_x[0],square)[2]==1:
         objective_counts=get_number(line_x[0],square)[1]-get_number(line_x[0],square)[0]-1
@@ -1605,5 +1734,15 @@ if __name__ == "__main__":
     ##print(outnodes)
 
     parts_clk_all=get_clk_partitioning(clk_All,die_area,def_unit)
-
-    get_small_groups(0,parts_clk_all)
+    ##print()
+    ##print(sys.argv)
+    start=time.time()
+    lalala=len(get_group_of_buffer(parts_clk_all))
+    end_time=time.time()-start
+    
+    if lalala !=2198:
+        print('ERROROROROROROOR')
+        print(sys.argv)
+        print(lalala)
+        print('time :',end_time)
+        print()
