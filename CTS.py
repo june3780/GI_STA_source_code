@@ -502,7 +502,7 @@ def get_new_wire_cap(Gall,wlm): ############femto farad
 
 
 
-def get_new_Delay_of_nodes_CLK(clk_All_with_wire_cap,CLK_mode):
+def get_new_Delay_of_nodes_CLK(clk_All_with_wire_cap,CLK_mode,wire_mode,lliberty_type):
     All=copy.deepcopy(clk_All_with_wire_cap)
     if CLK_mode=='ideal':
         for idx,ivalue in enumerate(All):
@@ -510,13 +510,54 @@ def get_new_Delay_of_nodes_CLK(clk_All_with_wire_cap,CLK_mode):
             All[ivalue]['rise_Delay']=0
             All[ivalue]['fall_Transition']=0
             All[ivalue]['rise_Transition']=0
-
+        return All
     else: ############################ 코딩 필요 (clk의 real한 경우)
         for idx,ivalue in enumerate(All):
             if All[ivalue]['stage']==[0,'OUTPUT']:
-                break
+                All[ivalue]['fall_Delay']=0
+                All[ivalue]['rise_Delay']=0
+                All[ivalue]['fall_Transition']=0
+                All[ivalue]['rise_Transition']=0
+                All[ivalue]['load_capacitance_rise']=0
+                All[ivalue]['load_capacitance_fall']=0
 
-    return All
+        for idx,ivalue in enumerate(All):
+            if All[ivalue]['stage']==[0,'INPUT']:
+                All[ivalue]['fall_Delay']=All[All[ivalue]['from'][0]]['fall_Delay']
+                All[ivalue]['rise_Delay']=All[All[ivalue]['from'][0]]['rise_Delay']
+                All[ivalue]['input_transition_fall']=All[All[ivalue]['from'][0]]['fall_Transition']
+                All[ivalue]['input_transition_rise']=All[All[ivalue]['from'][0]]['rise_Transition']
+
+        All=get_new_all_Delay_Transition_of_nodes(All,wire_mode,lliberty_type)
+
+        max_stage=int()
+        for ivalue in All:
+            if max_stage<All[ivalue]['stage'][0]:
+                max_stage=All[ivalue]['stage'][0]
+
+        for ivalue in All:
+            if All[ivalue]['stage'][0]==max_stage and All[ivalue]['direction']=='INPUT':
+                All[ivalue].update({'rise_Transition':All[ivalue]['input_transition_rise']})
+                All[ivalue].update({'fall_Transition':All[ivalue]['input_transition_fall']})
+
+        max_delay=float()
+        for ivalue in All:
+            if All[ivalue]['stage'][0]==max_stage and All[ivalue]['direction']=='INPUT':
+                if max_delay<All[ivalue]['rise_Delay']:
+                    max_delay=All[ivalue]['rise_Delay']
+        
+        min_delay=max_delay
+        for ivalue in All:
+            if All[ivalue]['stage'][0]==max_stage and All[ivalue]['direction']=='INPUT':
+                if min_delay>All[ivalue]['rise_Delay']:
+                    min_delay=All[ivalue]['rise_Delay']
+
+        for ivalue in All:
+            if All[ivalue]['stage'][0]==max_stage and All[ivalue]['direction']=='INPUT':
+                All[ivalue]['rise_Delay']=All[ivalue]['rise_Delay']-min_delay
+
+        skew=max_delay-min_delay
+        return [All,skew]
 
 
 
@@ -581,8 +622,8 @@ def get_new_Delay_of_nodes_stage0(Gall,TALL,wire_mode,lliberty_type): ##########
             df_fall_transition=pd.read_csv(checking_path_output+'/condition: 0, fall_transtion.tsv',sep='\t')
             df_rise_transition=pd.read_csv(checking_path_output+'/condition: 0, rise_transtion.tsv',sep='\t')
             
-            All[ivalue]['fall_Delay']=get_value_from_table(df_fall_delay,checking_rising,All[ivalue]['load_capacitance_fall'])
-            All[ivalue]['rise_Delay']=get_value_from_table(df_rise_delay,checking_rising,All[ivalue]['load_capacitance_rise'])
+            All[ivalue]['fall_Delay']=get_value_from_table(df_fall_delay,checking_rising,All[ivalue]['load_capacitance_fall'])+TAll[ivalue.split(" ")[0]+' CK']['rise_Delay']
+            All[ivalue]['rise_Delay']=get_value_from_table(df_rise_delay,checking_rising,All[ivalue]['load_capacitance_rise'])+TAll[ivalue.split(" ")[0]+' CK']['rise_Delay']
             All[ivalue]['fall_Transition']=get_value_from_table(df_fall_transition,checking_rising,All[ivalue]['load_capacitance_fall'])
             All[ivalue]['rise_Transition']=get_value_from_table(df_rise_transition,checking_rising,All[ivalue]['load_capacitance_rise'])
 
@@ -755,8 +796,6 @@ def get_new_all_Delay_Transition_of_nodes(delay_only_first_stage_without_clk_All
 
                     fall_delay_finals.append([fall_delay_candidate[tdx][0],fall_delay_candidate[tdx][1][2]+get_value_from_table(df5_delay,input_ttrraann,load_capa),get_value_from_table(df5_trans,input_ttrraann,load_capa),unate])
                     
-                    '''if kvalue =='g0288 ZN':
-                        print(kvalue, fall_delay_candidate[tdx][1][2],get_value_from_table(df5_delay,input_ttrraann,load_capa),df5_delay,input_ttrraann,load_capa)'''
 
                 rise_delay_finals=list()
                 for tdx in range(len(rise_delay_candidate)):
@@ -820,13 +859,7 @@ def get_new_all_Delay_Transition_of_nodes(delay_only_first_stage_without_clk_All
 
 
 
-
-
-
-
-
-def get_new_worst_path(All):
-
+def get_last_nodes_list(All):
     list_of_path=list()
     max_stage_number=int()
 
@@ -835,21 +868,28 @@ def get_new_worst_path(All):
             max_stage_number=All[ivalue]['stage'][0]
     
     all_last_nodes=list()
+
+    df=pd.DataFrame({'last_node_name':[],'delay':[]})
+    new_df=pd.DataFrame()
     for idx,ivalue in enumerate(All):
         if len(All[ivalue]['to'])==0:
-                all_last_nodes.append(ivalue)
-    
-    worst_nodes=str()
-    worst_delay=float()
-    for idx in range(len(all_last_nodes)):
-        if All[all_last_nodes[idx]]['fall_Delay']>worst_delay:
-            worst_delay=All[all_last_nodes[idx]]['fall_Delay']
-            worst_nodes=all_last_nodes[idx]
+                worst_state=str()
+                if All[ivalue]['fall_Delay']>All[ivalue]['rise_Delay']:
+                    worst_state='fall_Delay'
+                else:
+                    worst_state='rise_Delay'
+                new_df=pd.DataFrame({'last_node_name':[ivalue],'delay':[All[ivalue][worst_state]]})
+                df=df.append(new_df,ignore_index=True)
 
-    for idx in range(len(all_last_nodes)):
-        if All[all_last_nodes[idx]]['rise_Delay']>worst_delay:
-            worst_delay=All[all_last_nodes[idx]]['rise_Delay']
-            worst_nodes=all_last_nodes[idx]
+    df=df.sort_values(by='delay',axis=0,ascending=False)
+    all_last_nodes=(list(df['last_node_name']))
+    return all_last_nodes
+
+
+
+
+def get_new_worst_path(All,worst_nodes):
+    list_of_path=list()
     checking=worst_nodes
 
 
@@ -903,8 +943,6 @@ def get_new_worst_path(All):
                 if reverse_list_of_path[idx][1]=='rising':
                     reverse_list_of_path[idx].append(All[reverse_list_of_path[idx][0]]['rise_Delay'])
 
-    for idx in range(len(reverse_list_of_path)):
-        print(reverse_list_of_path[idx])
     return reverse_list_of_path
 
 
@@ -1140,7 +1178,7 @@ def get_small_groups(second_square):
 
 
 
-def get_group_of_buffer(part_of_clk):
+def get_group_of_buffer(part_of_clk,temp_macro):
     kk=dict()
 
     number=1
@@ -1177,8 +1215,8 @@ def get_group_of_buffer(part_of_clk):
     tttt=copy.deepcopy(kkkk)
 
     for ivalue in tttt:
-        kkkk.update({ivalue+' A':{'type':'cell','direction':'INPUT','to':[ivalue+' Z'],'from':tttt[ivalue]['from'],'macroID':'CLKBUF_X1','cell_type':'Combinational'}})
-        kkkk.update({ivalue+' Z':{'type':'cell','direction':'OUTPUT','to':tttt[ivalue]['to'],'from':[ivalue+' A'],'macroID':'CLKBUF_X1','cell_type':'Combinational'}})
+        kkkk.update({ivalue+' A':{'type':'cell','direction':'INPUT','to':[ivalue+' Z'],'from':tttt[ivalue]['from'],'macroID':temp_macro,'cell_type':'Combinational'}})
+        kkkk.update({ivalue+' Z':{'type':'cell','direction':'OUTPUT','to':tttt[ivalue]['to'],'from':[ivalue+' A'],'macroID':temp_macro,'cell_type':'Combinational'}})
         del kkkk[ivalue]
 
     for ivalue in kkkk:
@@ -1195,8 +1233,8 @@ def get_group_of_buffer(part_of_clk):
         if len(kkkk[ivalue]['from'])==0:
             connecting=ivalue
 
-    kkkk.update({'temp_clk_buffer A':{'type': 'cell', 'direction': 'INPUT', 'to': ['temp_clk_buffer Z'],'from':['PIN clk'], 'macroID': 'CLKBUF_X1', 'cell_type': 'Combinational'}})
-    kkkk.update({'temp_clk_buffer Z':{'type': 'cell', 'direction': 'OUTPUT', 'to': [connecting],'from':['temp_clk_buffer A'], 'macroID': 'CLKBUF_X1', 'cell_type': 'Combinational'}})
+    kkkk.update({'temp_clk_buffer A':{'type': 'cell', 'direction': 'INPUT', 'to': ['temp_clk_buffer Z'],'from':['PIN clk'], 'macroID': temp_macro, 'cell_type': 'Combinational'}})
+    kkkk.update({'temp_clk_buffer Z':{'type': 'cell', 'direction': 'OUTPUT', 'to': [connecting],'from':['temp_clk_buffer A'], 'macroID': temp_macro, 'cell_type': 'Combinational'}})
     kkkk['temp_buffer_0 A']['from']=['temp_clk_buffer Z']
     return kkkk
 
@@ -1660,16 +1698,517 @@ def get_stage_with_CTS(clk, cts):
                 if kvalue in cts[ivalue]['to'][jdx]:
                     clk[kvalue]['from']=[ivalue]
 
-
     cts.update(clk)
-
-
-    
     All=get_new_stage_nodes(cts)
+    return All
+
+
+
+
+
+def get_new_position_of_CTS_cells(All,dieArea,temp_macro,clkpos):
+    max_stage=int()
+    for ivalue in All:
+        if max_stage<All[ivalue]['stage'][0]:
+            max_stage=All[ivalue]['stage'][0]
+
+
+    last_temp_number=int()
+
+    for ivalue in All:
+        if All[ivalue]['stage'][1]=='OUTPUT' and 'clk' not in ivalue:
+            last_temp=ivalue.split('temp_buffer_')[1].split(' ')[0]
+            if last_temp_number<int(last_temp):
+                last_temp_number=int(last_temp)
+
+    TAll=copy.deepcopy(All)
+
+    kkk=int()
+    for ivalue in TAll:
+        if All[ivalue]['stage'][1]=='OUTPUT' and All[ivalue]['stage'][0]==max_stage-1:
+            counting_of_ck=int()
+            for idx in range(len(All[ivalue]['to'])):
+                if 'CK' in All[ivalue]['to'][idx]:
+                    counting_of_ck=counting_of_ck+1
+            if counting_of_ck==2:
+                last_temp_number=last_temp_number+1
+                All.update({'temp_buffer_'+str(last_temp_number)+' Z':{'type': 'cell', 'direction': 'OUTPUT', 'to':All[ivalue]['to'],'from':['temp_buffer_'+str(last_temp_number)+' A'],\
+                    'macroID': temp_macro, 'cell_type': 'Combinational', 'stage':[max_stage,'OUTPUT']}})
+                for kdx in range(len(All['temp_buffer_'+str(last_temp_number)+' Z']['to'])):
+                    All[All['temp_buffer_'+str(last_temp_number)+' Z']['to'][kdx]]['from']=['temp_buffer_'+str(last_temp_number)+' Z']
+                    All[All['temp_buffer_'+str(last_temp_number)+' Z']['to'][kdx]]['stage']=[max_stage,'INPUT']
+                All.update({'temp_buffer_'+str(last_temp_number)+' A':{'type': 'cell', 'direction': 'INPUT', 'to':['temp_buffer_'+str(last_temp_number)+' Z'],'from':[ivalue],\
+                    'macroID': temp_macro, 'cell_type': 'Combinational', 'stage':[max_stage-1,'INPUT']}})
+                All[ivalue]['to']=['temp_buffer_'+str(last_temp_number)+' A']
+
+
+    for ivalue in TAll:
+        if All[ivalue]['stage'][1]=='OUTPUT' and All[ivalue]['stage'][0]==max_stage-1:
+            counting_of_ck=int()
+            whereisCK=int()
+            for idx in range(len(All[ivalue]['to'])):
+                if 'CK' in All[ivalue]['to'][idx]:
+                    whereisCK=idx
+                    counting_of_ck=counting_of_ck+1
+            if counting_of_ck==1:
+                last_temp_number=last_temp_number+1
+                All.update({'temp_buffer_'+str(last_temp_number)+' Z':{'type': 'cell', 'direction': 'OUTPUT', 'to':[All[ivalue]['to'][whereisCK]],'from':['temp_buffer_'+str(last_temp_number)+' A'],\
+                    'macroID': temp_macro, 'cell_type': 'Combinational', 'stage':[max_stage,'OUTPUT']}})
+                All[All[ivalue]['to'][whereisCK]]['from']=['temp_buffer_'+str(last_temp_number)+' Z']
+                All[All[ivalue]['to'][whereisCK]]['stage']=[max_stage,'INPUT']
+                All.update({'temp_buffer_'+str(last_temp_number)+' A':{'type': 'cell', 'direction': 'INPUT', 'to':['temp_buffer_'+str(last_temp_number)+' Z'],'from':[ivalue],\
+                    'macroID': temp_macro, 'cell_type': 'Combinational', 'stage':[max_stage-1,'INPUT']}})
+                All[ivalue]['to'][whereisCK]='temp_buffer_'+str(last_temp_number)+' A'
+
+
+    All=get_candidate_position_dict(All,max_stage,dieArea,temp_macro)[0]
+    position_dict=get_candidate_position_dict(All,max_stage,dieArea,temp_macro)[1]
+
+    for ivalue in All:
+        if All[ivalue]['stage'][0]==max_stage and All[ivalue]['direction']=='OUTPUT':
+            max_stage_minus_one=All[All[ivalue]['from'][0]]['from'][0]
+            if len(All[max_stage_minus_one]['to']) ==1 and 'position' not in All[ivalue]:
+
+                max_stage_minus_two=All[All[max_stage_minus_one]['from'][0]]['from'][0]
+                for jdx in range(len(All[max_stage_minus_two]['to'])):
+                    if All[All[max_stage_minus_two]['to'][jdx]]['to'][0]==max_stage_minus_one:
+                        continue
+                    else:
+                        other_max_stage_with_same_minus_one_stage=All[All[max_stage_minus_two]['to'][jdx]]['to'][0]
+
+                        if len(All[other_max_stage_with_same_minus_one_stage]['to'])==1 and 'position' in All[All[All[other_max_stage_with_same_minus_one_stage]['to'][0]]['to'][0]]:
+                            first_position=position_dict[ivalue]['candidate_position']
+                            second_position=[All[All[All[other_max_stage_with_same_minus_one_stage]['to'][0]]['to'][0]]['position']]
+                            All[ivalue].update({'position':get_hpwl_by_two_positions(first_position,second_position)[0]})
+
+                        elif len(All[other_max_stage_with_same_minus_one_stage]['to'])==2:
+                            position_of_other_1=All[All[All[other_max_stage_with_same_minus_one_stage]['to'][0]]['to'][0]]['position']
+                            position_of_other_2=All[All[All[other_max_stage_with_same_minus_one_stage]['to'][1]]['to'][0]]['position']
+                            other_position=[(position_of_other_1[0]+position_of_other_2[0])/2,(position_of_other_1[1]+position_of_other_2[1])/2]
+                            first_position=position_dict[ivalue]['candidate_position']
+                            second_position=[other_position]
+                            All[ivalue].update({'position':get_hpwl_by_two_positions(first_position,second_position)[0]})
+                        
+                        else:
+                            other_cell=All[All[other_max_stage_with_same_minus_one_stage]['to'][0]]['to'][0]
+                            first_position=position_dict[ivalue]['candidate_position']
+                            second_position=position_dict[other_cell]['candidate_position']
+                            All[ivalue].update({'position':get_hpwl_by_two_positions(first_position,second_position)[0]})
+                            All[other_cell].update({'position':get_hpwl_by_two_positions(first_position,second_position)[1]})
+
+    for ivalue in All:
+        if All[ivalue]['stage'][0]==max_stage-1 and All[ivalue]['direction']=='INPUT':
+            A_position=get_input_position(All[All[ivalue]['to'][0]]['position'],temp_macro)
+            All[ivalue].update({'position':A_position})
+
+
+    All=get_candidate_position_dict(All,max_stage-1,dieArea,temp_macro)[0]
+    position_dict=get_candidate_position_dict(All,max_stage-1,dieArea,temp_macro)[1]
+
+    for ivalue in All:
+        if All[ivalue]['stage'][0]==max_stage-1 and All[ivalue]['direction']=='OUTPUT':
+            if len(All[ivalue]['to']) ==1 and 'position' not in All[ivalue]:
+                upper_stage=All[All[ivalue]['from'][0]]['from'][0]
+                other_stage=str()
+                if All[upper_stage]['to'][0]==All[ivalue]['from'][0]:
+                    other_stage=All[All[upper_stage]['to'][1]]['to'][0]
+                else:
+                    other_stage=All[All[upper_stage]['to'][0]]['to'][0]
+
+                if 'position' in All[other_stage]:
+                    first_position=position_dict[ivalue]['candidate_position']
+                    second_position=[All[other_stage]['position']]
+                    All[ivalue].update({'position':get_hpwl_by_two_positions(first_position,second_position)[0]})
+
+                else:
+                    first_position=position_dict[ivalue]['candidate_position']
+                    second_position=position_dict[other_stage]['candidate_position']
+                    All[ivalue].update({'position':get_hpwl_by_two_positions(first_position,second_position)[0]})
+                    All[other_stage].update({'position':get_hpwl_by_two_positions(first_position,second_position)[1]})                    
+
+    for ivalue in All:
+        if All[ivalue]['stage'][0]==max_stage-2 and All[ivalue]['direction']=='INPUT':
+            A_position=get_input_position(All[All[ivalue]['to'][0]]['position'],temp_macro)
+            All[ivalue].update({'position':A_position})
+
+
+    counts=max_stage-2
+    while True:
+        if counts==1:
+            break
+        All=get_candidate_position_dict(All,counts,dieArea,temp_macro)[0]
+        for ivalue in All:
+            if All[ivalue]['stage'][0]==counts-1 and All[ivalue]['direction']=='INPUT':
+                A_position=get_input_position(All[All[ivalue]['to'][0]]['position'],temp_macro)
+                All[ivalue].update({'position':A_position})
+        counts=counts-1
+
+    for ivalue in All:
+        if ivalue =='PIN clk':
+            continue
+        All[ivalue]['stage'][0]=All[ivalue]['stage'][0]-1
+    
+    del All['temp_clk_buffer A']
+    del All['temp_clk_buffer Z']
+    All['temp_buffer_0 A']['from']=['PIN clk']
+    All['PIN clk']['to']=['temp_buffer_0 A']
+    All['PIN clk']['position']=clkpos
+    
+
+    length_dict=dict()
+    for ivalue in All:
+        if (All[ivalue]['type']=='PIN' and All[ivalue]['direction']=='INPUT') or (All[ivalue]['type']=='cell' and All[ivalue]['direction']=='OUTPUT'):
+            length_dict.update({ivalue:[All[ivalue]['position']]})
+
+    for ivalue in length_dict:
+        for kdx in range(len(All[ivalue]['to'])):
+            length_dict[ivalue].append(All[All[ivalue]['to'][kdx]]['position'])
+        All[ivalue].update({'wire_length_hpwl':get_new_wirelength_hpwl(length_dict[ivalue]),'wire_length_clique':get_new_wirelength_clique(length_dict[ivalue]),'wire_length_star':get_new_wirelength_star(length_dict[ivalue])})
+
 
     return All
 
 
+
+
+
+
+
+
+
+
+
+def get_candidate_position_dict(TAll,max_stage,dieArea,temp_macro):
+    All=copy.deepcopy(TAll)
+    max_minimum_length=float()
+    position_dict=dict()
+
+    for ivalue in All:
+        if All[ivalue]['stage'][0]==max_stage and All[ivalue]['direction']=='OUTPUT' and len(All[ivalue]['to'])==2:
+            pos1=list()
+            pos2=list()
+            for idx in range(len(All[ivalue]['to'])):
+                if idx==0:
+                    pos1= All[All[ivalue]['to'][idx]]['position']
+                else:
+                    pos2= All[All[ivalue]['to'][idx]]['position']
+            cvalue=(abs(pos1[0]-pos2[0])+abs(pos1[1]-pos2[1]))/2
+            if (pos1[0]<pos2[0] and pos1[1]<pos2[1]) or (pos2[0]<pos1[0] and pos2[1]<pos1[1]):
+                minx=min(pos1[0],pos2[0])
+                maxx=max(pos1[0],pos2[0])
+                miny=min(pos1[1],pos2[1])
+                maxy=max(pos1[1],pos2[1])
+                if abs(pos1[0]-pos2[0])<abs(pos1[1]-pos2[1]):
+                    position_dict.update({ivalue:{'position1':pos1,'position2':pos2,'minimum_distance':cvalue,'candidate_position':[[str(minx)+' -x',str(miny+cvalue)],[str(maxx)+' +x',str(maxy-cvalue)]]}})
+                elif abs(pos1[0]-pos2[0])>abs(pos1[1]-pos2[1]):
+                    position_dict.update({ivalue:{'position1':pos1,'position2':pos2,'minimum_distance':cvalue,'candidate_position':[[str(minx+cvalue),str(miny)+' -y'],[str(maxx-cvalue),str(maxy)+' +y']]}})
+                else:
+                    position_dict.update({ivalue:{'position1':pos1,'position2':pos2,'minimum_distance':cvalue,'candidate_position':[[str(minx)+' -x',str(maxy)+' +y'],[str(maxx)+' +x',str(miny)+' -y']]}})
+                if max_minimum_length<cvalue:
+                    max_minimum_length=cvalue
+            elif (pos1[0]<pos2[0] and pos1[1]>pos2[1]) or (pos2[0]<pos1[0] and pos2[1]>pos1[1]):
+                minx=min(pos1[0],pos2[0])
+                maxx=max(pos1[0],pos2[0])
+                miny=min(pos1[1],pos2[1])
+                maxy=max(pos1[1],pos2[1])
+                if abs(pos1[0]-pos2[0])<abs(pos1[1]-pos2[1]):
+                    position_dict.update({ivalue:{'position1':pos1,'position2':pos2,'minimum_distance':cvalue,'candidate_position':[[str(minx)+' -x',str(maxy-cvalue)],[str(maxx)+' +x',str(miny+cvalue)]]}})
+                elif abs(pos1[0]-pos2[0])>abs(pos1[1]-pos2[1]):
+                    position_dict.update({ivalue:{'position1':pos1,'position2':pos2,'minimum_distance':cvalue,'candidate_position':[[str(maxx-cvalue),str(miny)+' -y'],[str(minx+cvalue),str(maxy)+' +y']]}})
+                else:
+                    position_dict.update({ivalue:{'position1':pos1,'position2':pos2,'minimum_distance':cvalue,'candidate_position':[[str(minx)+' -x',str(miny)+' -y'],[str(maxx)+' +x',str(maxy)+' +y']]}})
+                if max_minimum_length<cvalue:
+                    max_minimum_length=cvalue
+            elif pos1[0]==pos2[0]:
+                position_dict.update({ivalue:{'position1':pos1,'position2':pos2,'minimum_distance':cvalue,'candidate_position':[[str(pos1[0])+' -x',str(min(pos1[1],pos2[1])+cvalue)],[str(pos1[0])+' +x',str(min(pos1[1],pos2[1])+cvalue)]]}})
+            elif pos1[1]==pos2[1]:
+                position_dict.update({ivalue:{'position1':pos1,'position2':pos2,'minimum_distance':cvalue,'candidate_position':[[str(min(pos1[0],pos2[0])+cvalue),str(pos1[1])+' -y'],[str(min(pos1[0],pos2[0])+cvalue),str(pos1[1])+' +y']]}})
+    
+        elif All[ivalue]['stage'][0]==max_stage and All[ivalue]['direction']=='OUTPUT' and len(All[ivalue]['to'])==1:
+            pos1=list()
+            pos1= All[All[ivalue]['to'][0]]['position']
+            position_dict.update({ivalue:{'position1':pos1,'minimum_distance':float(0),'candidate_position':[[str(pos1[0])+' -x',str(pos1[1])],[str(pos1[0])+' +x',str(pos1[1])],[str(pos1[0]),str(pos1[1])+' -y'],[str(pos1[0]),str(pos1[1])+' +y']]}})
+
+
+    for ivalue in position_dict:
+        if position_dict[ivalue]['minimum_distance'] == max_minimum_length:
+            All[ivalue].update({'position':[(position_dict[ivalue]['position1'][0]+position_dict[ivalue]['position2'][0])/2,(position_dict[ivalue]['position1'][1]+position_dict[ivalue]['position2'][1])/2]})
+            position_dict[ivalue]['candidate_position']=[[(position_dict[ivalue]['position1'][0]+position_dict[ivalue]['position2'][0])/2,(position_dict[ivalue]['position1'][1]+position_dict[ivalue]['position2'][1])/2]]
+        else:
+            for idx in range(len(position_dict[ivalue]['candidate_position'])):
+                for jdx in range(len(position_dict[ivalue]['candidate_position'][idx])):
+                    if ('x' in position_dict[ivalue]['candidate_position'][idx][jdx] and 'y' not in position_dict[ivalue]['candidate_position'][idx][jdx]) or ('x' not in position_dict[ivalue]['candidate_position'][idx][jdx] and 'y' in position_dict[ivalue]['candidate_position'][idx][jdx]):
+                        if '-' in position_dict[ivalue]['candidate_position'][idx][jdx]:
+                            position_dict[ivalue]['candidate_position'][idx][jdx]=float(position_dict[ivalue]['candidate_position'][idx][jdx].split(' ')[0])-(max_minimum_length-position_dict[ivalue]['minimum_distance'])
+                        else:
+                            position_dict[ivalue]['candidate_position'][idx][jdx]=float(position_dict[ivalue]['candidate_position'][idx][jdx].split(' ')[0])+(max_minimum_length-position_dict[ivalue]['minimum_distance'])
+                    else:
+                        position_dict[ivalue]['candidate_position'][idx][jdx]=float(position_dict[ivalue]['candidate_position'][idx][jdx])
+
+        del position_dict[ivalue]['minimum_distance']
+        del position_dict[ivalue]['position1']
+        if 'position2' in position_dict[ivalue]:
+            del position_dict[ivalue]['position2']
+
+        willdel=list()
+        for jdx in range(len(position_dict[ivalue]['candidate_position'])):
+            if position_dict[ivalue]['candidate_position'][jdx][0]<dieArea[0][0] or position_dict[ivalue]['candidate_position'][jdx][1]<dieArea[0][1] or position_dict[ivalue]['candidate_position'][jdx][0]>dieArea[1][0] or position_dict[ivalue]['candidate_position'][jdx][1]>dieArea[1][1]:
+                willdel.append(position_dict[ivalue]['candidate_position'][jdx])
+
+            A_position=list()
+            A_position=get_input_position(position_dict[ivalue]['candidate_position'][jdx],temp_macro)
+            if A_position[0]<dieArea[0][0] or A_position[1]<dieArea[0][1] or A_position[0]>dieArea[1][0] or A_position[1]>dieArea[1][1]:
+                willdel.append(position_dict[ivalue]['candidate_position'][jdx])
+            
+
+
+
+        for jdx in range(len(willdel)):
+            if willdel[jdx] in position_dict[ivalue]['candidate_position']:
+                position_dict[ivalue]['candidate_position'].remove(willdel[jdx])
+
+        if len(position_dict[ivalue]['candidate_position'])==0:
+            print('Error: Some midpoint doesn\'t exist in die Area : '+ivalue)
+            return 'Error'
+        
+        elif len(position_dict[ivalue]['candidate_position'])==1:
+            All[ivalue].update({'position':position_dict[ivalue]['candidate_position'][0]})
+
+    for ivalue in All:
+        if All[ivalue]['stage'][0]==max_stage and All[ivalue]['direction']=='OUTPUT':
+            if len(All[All[All[ivalue]['from'][0]]['from'][0]]['to']) ==2:
+                counting_position=int()
+                if 'position' in All[ivalue]:
+
+                    whohas_position=str()
+                    with_position=list()
+                    for jdx in range(len(All[All[All[ivalue]['from'][0]]['from'][0]]['to'])):
+                        with_position.append(All[All[All[All[ivalue]['from'][0]]['from'][0]]['to'][jdx]]['to'][0])
+                        if 'position' in All[All[All[All[All[ivalue]['from'][0]]['from'][0]]['to'][jdx]]['to'][0]]:
+                            counting_position=counting_position+1
+                            whohas_position=All[All[All[All[ivalue]['from'][0]]['from'][0]]['to'][jdx]]['to'][0]
+
+
+                    if counting_position==2:
+                        continue
+
+                    with_position.remove(whohas_position)
+                    first_position=list()
+                    second_position=list()
+
+                    first_position=[All[whohas_position]['position']]
+                    second_position=position_dict[with_position[0]]['candidate_position']
+                    All[with_position[0]].update({'position':get_hpwl_by_two_positions(first_position,second_position)[1]})
+
+
+                else:
+                    whohas_position=str()
+                    with_position=list()
+                    ifcont=str()
+                    for jdx in range(len(All[All[All[ivalue]['from'][0]]['from'][0]]['to'])):
+                        with_position.append(All[All[All[All[ivalue]['from'][0]]['from'][0]]['to'][jdx]]['to'][0])
+                        if 'position' in All[All[All[All[All[ivalue]['from'][0]]['from'][0]]['to'][jdx]]['to'][0]]:
+                            ifcont='con'
+                    if ifcont=='con':
+                        continue
+
+                    first_position=position_dict[with_position[0]]['candidate_position']
+                    second_position=position_dict[with_position[1]]['candidate_position']
+                    All[with_position[0]].update({'position':get_hpwl_by_two_positions(first_position,second_position)[0]})
+                    All[with_position[1]].update({'position':get_hpwl_by_two_positions(first_position,second_position)[1]})
+    return [All,position_dict]
+
+
+
+
+
+
+
+
+
+
+
+def get_hpwl_by_two_positions(position_list1,position_list2):
+    hpwl_info=dict()
+    max_hpwl_length=float()
+    max_hpwl_area=float()
+    for idx in range(len(position_list1)):
+        for kdx in range(len(position_list2)):
+            aaa=max(position_list1[idx][0],position_list2[kdx][0])-min(position_list1[idx][0],position_list2[kdx][0])
+            bbb=max(position_list1[idx][1],position_list2[kdx][1])-min(position_list1[idx][1],position_list2[kdx][1])
+            hpwl_length=aaa+bbb
+            hpwl_area=aaa*bbb
+            hpwl_info.update({str(idx)+'-'+str(kdx):{'hpwl_length':hpwl_length,'hpwl_area':hpwl_area}})
+            if max_hpwl_length<hpwl_length:
+                max_hpwl_length=hpwl_length
+            if max_hpwl_area<hpwl_area:
+                max_hpwl_area=hpwl_area
+
+    min_hpwl_length=max_hpwl_length
+    min_hpwl_area=max_hpwl_area
+
+    for ivalue in hpwl_info:
+        if min_hpwl_length>hpwl_info[ivalue]['hpwl_length']:
+            min_hpwl_length=hpwl_info[ivalue]['hpwl_length']
+    
+    temp_dict=copy.deepcopy(hpwl_info)
+    for ivalue in temp_dict:
+        if min_hpwl_length<hpwl_info[ivalue]['hpwl_length']:
+            del hpwl_info[ivalue]
+
+    final_positions=list()
+    if len(hpwl_info)==1:
+        for ivalue in hpwl_info:
+            final_positions=[position_list1[int(ivalue.split('-')[0])],position_list2[int(ivalue.split('-')[1])]]
+            return final_positions
+
+    else:
+        for ivalue in hpwl_info:
+            if min_hpwl_area>hpwl_info[ivalue]['hpwl_area']:
+                min_hpwl_area=hpwl_info[ivalue]['hpwl_area']
+
+        temp_dict=copy.deepcopy(hpwl_info)
+
+        list_of_name=list()
+        for ivalue in temp_dict:
+            if min_hpwl_length<hpwl_info[ivalue]['hpwl_length']:
+                del hpwl_info[ivalue]
+            else:
+                list_of_name.append(ivalue)
+
+        if len(hpwl_info)==1:
+            for ivalue in hpwl_info:
+                final_positions=[position_list1[int(ivalue.split('-')[0])],position_list2[int(ivalue.split('-')[1])]]
+                return final_positions
+        
+        else:
+            max_ivalue_1=int()
+
+            for ivalue in list_of_name:
+                if max_ivalue_1<int(ivalue.split('-')[0]):
+                    max_ivalue_1=int(ivalue.split('-')[0])
+            
+            temp_list=copy.deepcopy(list_of_name)
+
+            for ivalue in temp_list:
+                if max_ivalue_1>int(ivalue.split('-')[0]):
+                    list_of_name.remove(ivalue)
+            
+            if len(list_of_name)==1:
+                final_positions=[position_list1[int(list_of_name[0].split('-')[0])],position_list2[int(list_of_name[0].split('-')[1])]]
+                return final_positions
+
+            else:
+                max_ivalue_2=int()
+                for ivalue in list_of_name:
+                    if max_ivalue_2<int(ivalue.split('-')[1]):
+                        max_ivalue_2=int(ivalue.split('-')[1])
+
+                temp_list=copy.deepcopy(list_of_name)
+
+                for ivalue in temp_list:
+                    if max_ivalue_2>int(ivalue.split('-')[1]):
+                        list_of_name.remove(ivalue)
+
+                final_positions=[position_list1[int(list_of_name[0].split('-')[0])],position_list2[int(list_of_name[0].split('-')[1])]]
+                return final_positions
+
+
+
+
+def get_new_wirelength_hpwl(position_list_list):
+    if len(position_list_list)==1:
+        return float(0)
+
+    else:
+
+        min_x=float()
+        max_x=float()
+        min_y=float()
+        max_y=float()
+        for kkdx in range(len(position_list_list)):
+            if max_x<position_list_list[kkdx][0]:
+                max_x=position_list_list[kkdx][0]
+            if max_y<position_list_list[kkdx][1]:
+                max_y=position_list_list[kkdx][1]
+        min_x=max_x
+        min_y=max_y
+        for kkdx in range(len(position_list_list)):
+            if min_x>position_list_list[kkdx][0]:
+                min_x=position_list_list[kkdx][0]
+            if min_y>position_list_list[kkdx][1]:
+                min_y=position_list_list[kkdx][1]
+
+
+        ans=(float(max_x)-float(min_x))+float((max_y)-float(min_y))
+        return ans
+
+
+
+
+
+
+
+
+def get_new_wirelength_star(position_list_list): 
+    if len(position_list_list)==1:
+        return float(0)
+    else:
+
+        dis_x=float()
+        dis_y=float()
+        start_x=float(position_list_list[0][0])
+        start_y=float(position_list_list[0][1])
+
+        for kkdx in range(len(position_list_list)):
+                dis_x=dis_x+abs(start_x-float(position_list_list[kkdx][0]))
+                dis_y=dis_y+abs(start_y-float(position_list_list[kkdx][1]))
+
+        ans=dis_x+dis_y
+        return ans
+
+
+
+
+def get_new_wirelength_clique(position_list_list):
+    if len(position_list_list)==1:
+        return float(0)
+    else:
+
+        dis_x=float()
+        dis_y=float()
+        start_x=float()
+        start_y=float()
+        for iiidx in range(len(position_list_list)):
+            for kkkdx in range(len(position_list_list)):
+                if kkkdx <= iiidx :
+                    continue
+                else:
+                    dis_x=dis_x+abs(float(position_list_list[iiidx][0])-float(position_list_list[kkkdx][0]))
+                    dis_y=dis_y+abs(float(position_list_list[iiidx][1])-float(position_list_list[kkkdx][1]))
+            ans=dis_x+dis_y
+        return ans
+
+
+
+
+
+
+def get_clk_pin_position(All,unit):
+    listlist=list()
+    listlist=[All['PIN clk']['position'][0]/unit,All['PIN clk']['position'][1]/unit]
+    return listlist
+
+
+
+
+
+
+def get_input_position(listlist,temp_macro):
+    A_positionlist=list()
+    if temp_macro=='CLKBUF_X1':
+        A_positionlist=[listlist[0]-0.00017,listlist[1]-0.0004125]
+    return A_positionlist
 
 
 
@@ -1748,7 +2287,7 @@ if __name__ == "__main__":
 
 
 
-    delay_with_clk_All=get_new_Delay_of_nodes_CLK(clk_All_with_wire_cap,CLK_mode)
+    delay_with_clk_All=get_new_Delay_of_nodes_CLK(clk_All_with_wire_cap,CLK_mode,wire_mode,liberty_type)
 
     delay_only_first_stage_without_clk_All=get_new_Delay_of_nodes_stage0(All_with_wire_cap,delay_with_clk_All,wire_mode,liberty_type)
     delay_without_clk_All=get_new_all_Delay_Transition_of_nodes(delay_only_first_stage_without_clk_All,wire_mode,liberty_type)
@@ -1779,16 +2318,16 @@ if __name__ == "__main__":
 ##################################################################################################################################################
 
 
-    if 'scratch' in def_name:
-        file_pathpath='../data/deflef_to_graph_and_verilog/results/'+file_address_name+'/test_7800_without_clk_'+wire_mode+'/'+file_name.split('_revised')[0]+'.json'
-        list_of_last_nodes=dict()
+
+    
+    if wire_mode=='wire_load':
+        file_pathpath='../data/deflef_to_graph_and_verilog/results/test_7800_zfor_clk_wire_load_scratch/scratch_detailed.json'
+        with open (file_pathpath,'r') as ff:
+            clk_All=json.load(ff)
+        file_pathpath='../data/deflef_to_graph_and_verilog/results/test_7800_without_clk_wire_load_scratch/scratch_detailed.json'
         with open (file_pathpath,'r') as ff:
             delay_without_clk_All=json.load(ff)
 
-
-        file_pathpath='../data/deflef_to_graph_and_verilog/results/'+file_address_name+'/test_7800_zfor_clk_'+wire_mode+'/'+file_name.split('_revised')[0]+'.json'
-        with open (file_pathpath,'r') as ff:
-            clk_All=json.load(ff)
     else:
         file_pathpath='../data/deflef_to_graph_and_verilog/results/'+file_address_name+'/test_7800_without_clk_'+wire_mode+'/'+file_name.split('_revised')[0]+'.json'
         list_of_last_nodes=dict()
@@ -1799,9 +2338,6 @@ if __name__ == "__main__":
         file_pathpath='../data/deflef_to_graph_and_verilog/results/'+file_address_name+'/test_7800_zfor_clk_'+wire_mode+'/'+file_name.split('_revised')[0]+'.json'
         with open (file_pathpath,'r') as ff:
             clk_All=json.load(ff)
-    
-
-
     ##list_of_startpoints_of_path=get_start_points(delay_without_clk_All,'l0973 D')
     ##print(list_of_startpoints_of_path)
     
@@ -1820,46 +2356,60 @@ if __name__ == "__main__":
     ##print(outnodes)
 
 
-
+    clk_pos=get_clk_pin_position(clk_All,def_unit)
     parts_clk_all=get_clk_partitioning(clk_All,die_area,def_unit)
     ##print()
     ##print(sys.argv)
-    temp_buffer_tree=get_group_of_buffer(parts_clk_all)
+    temporary_macro='CLKBUF_X1'
+    temp_buffer_tree=get_group_of_buffer(parts_clk_all,temporary_macro)
     CTS_stage_All=get_stage_with_CTS(clk_All,temp_buffer_tree)
-
-    ttt=int()
-    for iiiddd in range(16):
-        for stagess in range(16):
-            checking=iiiddd
-
-
+    new_position_All=get_new_position_of_CTS_cells(CTS_stage_All,die_area,temporary_macro,clk_pos)
+    clk_All_with_all_cap=get_new_wire_cap(new_position_All,default_wire_load_model)
+    CLK_mode='real'
+    skew=get_new_Delay_of_nodes_CLK(clk_All_with_all_cap,CLK_mode,wire_mode,liberty_type)[1]
+    clk_All_with_skew=get_new_Delay_of_nodes_CLK(clk_All_with_all_cap,CLK_mode,wire_mode,liberty_type)[0]
 
 
-            checking=checking+1
+    if wire_mode=='wire_load':
+        file_pathtt='../data/deflef_to_graph_and_verilog/results/test_7800_wire_load_scratch_CTS/scratch_detailed.json'
+        with open(file_pathtt,'w') as f:
+            json.dump([clk_All_with_skew,skew],f,indent=4)
 
-            nununu=stagess+1
+    else:
+        file_pathpath='../data/deflef_to_graph_and_verilog/results/'+file_address_name+'/test_7800_zfor_clk_'+wire_mode+'_with_skew/'+file_name.split('_revised')[0]+'.json'
+        with open(file_pathpath,'w') as f:
+            json.dump([clk_All_with_skew,skew],f,indent=4)
+
+    typed_All=get_type_of_new_graph(netinfo,file_address)
+    cutting_All=get_delnode_new_list(typed_All)
+    CLK2reg_All=get_CLK2CK_new_graph(cutting_All)
+    without_clk_All=get_new_del_related_with_CLK(cutting_All,CLK2reg_All)
+    without_unconnected_All=new_del_unconnected_nodes(without_clk_All)
+    stage_All=get_new_stage_nodes(without_unconnected_All)
+    All_with_wire_cap=get_new_wire_cap(stage_All,default_wire_load_model)
+    delay_only_first_stage_without_clk_All_skew=get_new_Delay_of_nodes_stage0(All_with_wire_cap,clk_All_with_skew,wire_mode,liberty_type)
+    delay_without_clk_All_skew=get_new_all_Delay_Transition_of_nodes(delay_only_first_stage_without_clk_All_skew,wire_mode,liberty_type)
+
+    total_delay=list()
+    total_delay_info=get_last_nodes_list(delay_without_clk_All_skew)
+    for idxxx in range(len(total_delay_info)):
+        what_has_worst_delay=total_delay_info[idxxx]
+        path_worst=get_new_worst_path(delay_without_clk_All_skew,what_has_worst_delay)
+        total_delay.append(path_worst)
 
 
+    if wire_mode=='wire_load':
+        file_pathtt='../data/deflef_to_graph_and_verilog/results/test_7800_wire_load_scratch_with_skew/scratch_detailed.json'
+        with open(file_pathtt,'w') as f:
+            json.dump(total_delay,f,indent=4)
 
-            if stagess==checking:
-                print()
-                print(kkk)
-                ttt=ttt+kkk
-                break
-            kkk=int()
-            for ivalue in CTS_stage_All:
-                if CTS_stage_All[ivalue]['stage'][0]==stagess:
-                    kkk=kkk+1
-                    if nununu==checking:
-                        print(ivalue, CTS_stage_All[ivalue])
-            else:
-                continue
+    else:
+        file_pathpath='../data/deflef_to_graph_and_verilog/results/'+file_address_name+'/test_7800_'+wire_mode+'_with_skew/'+file_name.split('_revised')[0]+'.json'
+        with open(file_pathpath,'w') as f:
+            json.dump(total_delay,f,indent=4)
+
+    print(file_address_name)
+    print(sys.argv)
+    print(skew)
     print()
-    print('tpgmlwns1!')
-    print(ttt)
-    rrr=int()
-    for jdvalue in CTS_stage_All:
-        rrr=rrr+1
-    print(rrr)
-
 

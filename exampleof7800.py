@@ -55,6 +55,16 @@ def copy_scratch(wirewire,defdef):
         shutil.copyfile(file_path_a1_bank,file_path+'/scratch_detailed.json')
 
 
+    file_path='../data/deflef_to_graph_and_verilog/results/'+defdef+'/test_7800_'+wirewire+'_with_skew'
+    file_path_a1_bank='../data/deflef_to_graph_and_verilog/results/a1_bank/test_7800_'+wirewire+'_with_skew/scratch_detailed.json'
+    if 'scratch_detailed.json' not in os.listdir(file_path):
+        shutil.copyfile(file_path_a1_bank,file_path+'/scratch_detailed.json')
+
+    file_path='../data/deflef_to_graph_and_verilog/results/'+defdef+'/test_7800_zfor_clk_'+wirewire+'_with_skew'
+    file_path_a1_bank='../data/deflef_to_graph_and_verilog/results/a1_bank/test_7800_zfor_clk_'+wirewire+'_with_skew/scratch_detailed.json'
+    if 'scratch_detailed.json' not in os.listdir(file_path):
+        shutil.copyfile(file_path_a1_bank,file_path+'/scratch_detailed.json')
+
     return 0
 
 
@@ -218,6 +228,7 @@ if __name__ == "__main__":
     wire_mod=['star']
 
     for kkiiddxx in range(len(deflist)):
+        
         get_def_files(deflist[kkiiddxx])
     
 
@@ -225,5 +236,6 @@ if __name__ == "__main__":
     if if_not_zero==str(1):
         for iddx in range(len(wire_mod)):
             for kkiiddxx in range(len(deflist)):
+                print(deflist[kkiiddxx])
                 get_file_and_make_directory(wire_mod[iddx],deflist[kkiiddxx])
                 copy_scratch(wire_mod[iddx],deflist[kkiiddxx])

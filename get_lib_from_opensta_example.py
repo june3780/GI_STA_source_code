@@ -1,4 +1,3 @@
-from errno import ENETUNREACH
 import readline
 from tkinter.ttk import setup_master
 from tracemalloc import start
