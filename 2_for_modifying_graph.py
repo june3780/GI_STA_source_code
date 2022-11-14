@@ -312,7 +312,6 @@ def get_new_stage_nodes_for_clk_nodes(TAll,netinfo_for_clk):
 
     if idx+1==tt:
         print('Clock Tree Synthesis is needed')
-        print()
 
     else:
         current_stage=1
@@ -563,7 +562,7 @@ def get_new_Delay_of_nodes_stage0(Gall,TALL,wire_mode,lliberty_type): ##########
             All[ivalue]['load_capacitance_rise']=0
             All[ivalue]['load_capacitance_fall']=0
 
-        if All[ivalue]['stage']==[0,'OUTPUT'] and All[ivalue]['type']=='cell': ############################ (clk to q delay)
+        if All[ivalue]['stage']==[0,'OUTPUT'] and All[ivalue]['type']=='cell' and 'LOGIC' not in All[ivalue]['macroID']: ############################ (clk to q delay)
             checking_path_output='../data/OPENSTA/OPENSTA_'+liberty_type+'/'+All[ivalue]['macroID']+'/3. output: '+ivalue.split(' ')[1]
             checking_falling=TAll[ivalue.split(" ")[0]+' CK']['rise_Transition'] ############# 인풋 파라미터1-1 클락의 경우 unateness가 non-unate이다.
             checking_rising=TAll[ivalue.split(" ")[0]+' CK']['rise_Transition'] ############# 인풋 파라미터1-2
@@ -586,11 +585,20 @@ def get_new_Delay_of_nodes_stage0(Gall,TALL,wire_mode,lliberty_type): ##########
             df_fall_transition=pd.read_csv(checking_path_output+'/condition: 0, fall_transtion.tsv',sep='\t')
             df_rise_transition=pd.read_csv(checking_path_output+'/condition: 0, rise_transtion.tsv',sep='\t')
             
-            All[ivalue]['fall_Delay']=get_value_from_table(df_fall_delay,checking_rising,All[ivalue]['load_capacitance_fall'])
-            All[ivalue]['rise_Delay']=get_value_from_table(df_rise_delay,checking_rising,All[ivalue]['load_capacitance_rise'])
+            All[ivalue]['fall_Delay']=get_value_from_table(df_fall_delay,checking_rising,All[ivalue]['load_capacitance_fall'])+TAll[ivalue.split(" ")[0]+' CK']['rise_Delay']
+            All[ivalue]['rise_Delay']=get_value_from_table(df_rise_delay,checking_rising,All[ivalue]['load_capacitance_rise'])+TAll[ivalue.split(" ")[0]+' CK']['rise_Delay']
             All[ivalue]['fall_Transition']=get_value_from_table(df_fall_transition,checking_rising,All[ivalue]['load_capacitance_fall'])
             All[ivalue]['rise_Transition']=get_value_from_table(df_rise_transition,checking_rising,All[ivalue]['load_capacitance_rise'])
 
+
+        elif All[ivalue]['stage']==[0,'OUTPUT'] and All[ivalue]['type']=='cell' and 'LOGIC' in All[ivalue]['macroID']:
+            All[ivalue]['load_capacitance_rise']=float(0)
+            All[ivalue]['load_capacitance_fall']=float(0)
+
+            All[ivalue]['fall_Delay']=float(0)
+            All[ivalue]['rise_Delay']=float(0)
+            All[ivalue]['fall_Transition']=float(0)
+            All[ivalue]['rise_Transition']=float(0)
 
     for idx,ivalue in enumerate(All):
         if All[ivalue]['stage']==[0,'INPUT']:
@@ -1312,12 +1320,7 @@ if __name__ == "__main__":
     file_pathpath='../data/deflef_to_graph_and_verilog/results/'+file_address_name+'/test_7800_zfor_clk_'+wire_mode+'/'+file_name.split('_revised')[0]+'.json'
     with open(file_pathpath,'w') as f:
         json.dump(stage_All_clk,f,indent=4)
-    
-    print(file_name.split('_revised')[0]+'.json')
-    print(wire_mode)
-    print()
-    print()
-    print()
+
 
 ##################################################################################################################################################
 
