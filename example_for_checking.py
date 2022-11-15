@@ -20,6 +20,9 @@ def get_file_and_make_directory(wiremode,file_type):
         if defdef=='break':
             break
         
+        if (file_type=='random3' and idx<38) or (file_type=='random' and idx<47):
+            idx=idx+1
+            continue
 
         if wiremode=='star':
             print()
@@ -34,13 +37,11 @@ def get_file_and_make_directory(wiremode,file_type):
         print('calculating')
         print()
         os.system('python3 2_for_modifying_graph.py '+defdef+' '+wiremode+' '+file_type)
+
         print(defdef,file_type,wiremode)
         print()
-        '''print()
-        print('CTS')
-        print()
-        os.system('python3 CTS.py '+defdef+' '+wiremode+' '+file_type)'''
         idx=idx+1
+    
 
     return 0
 
@@ -266,19 +267,10 @@ def get_CTS(set_of_file_types,wire_mode):
     new_list=list()
 
     del start_end_list[-1]
-    if set_of_file_types==['bank', 'Random2', 'a2_bank']:
-
-        for idx in range(98):
-            new_list.append(list_of_file[idx])
-            new_list.append(list_of_file[idx+98])
-            new_list.append(list_of_file[idx+198])
-
-        for idx in range(2):
-            new_list.append(list_of_file[idx+196])
-            new_list.append(list_of_file[idx+296])
+    if set_of_file_types==['a2_bank']:
 
         for idx in range(100):
-            new_list.append(list_of_file[idx+298])
+            new_list.append(list_of_file[idx+100])
 
 
     elif set_of_file_types==['rbank', 'Random2_detailed']:
@@ -286,7 +278,7 @@ def get_CTS(set_of_file_types,wire_mode):
             new_list.append(list_of_file[idx])
             new_list.append(list_of_file[idx+100])
 
-        deflist=[['a1_bank','a1_rbank'],['random', 'random3'],['Random','Rbank'],['a2_rbank','Rbank2']]
+        ##deflist=[['a1_bank','a1_rbank'],['random', 'random3'],['Random','Rbank'],['a2_rbank','Rbank2']]
 
     elif set_of_file_types==['a1_bank','a1_rbank']:
 
@@ -338,8 +330,10 @@ if __name__ == "__main__":
     ### deflist=['a2_bank','a2_rbank','Rbank','Rbank2']
 
 
-    deflist=['a1_bank', 'random', 'Random', 'a2_rbank'] ###     'bank' 'rbank'
-    deflist=['a1_rbank', 'random3', 'Rbank', 'Rbank2'] ###     'Random2' 'Random2_detailed'
+    ##deflist=['random', 'Random'] ###     'bank' 'rbank'
+    deflist=['random3', 'Rbank'] ###     'Random2' 'Random2_detailed'
+    ##deflist=['a2_rbank']
+    ##deflist=['Rbank2']
 
     wire_mod=['star']
 
@@ -358,9 +352,9 @@ if __name__ == "__main__":
 
 
 
-    deflist=[['a1_bank','a1_rbank'],['random', 'random3'],['Random','Rbank'],['a2_rbank','Rbank2']]
+    deflist=[['Random','Rbank'],['a2_rbank','Rbank2']]
 
-    ### deflist=[['bank','Random2','a2_bank'],['rbank','Random2_detailed']]
+    deflist=[['a2_bank'],['rbank','Random2_detailed'],['a1_bank','a1_rbank'],['random', 'random3']]
     if if_not_zero==str(2):
         for iddx in range(len(wire_mod)):
             for kkiiddxx in range(len(deflist)):

@@ -1774,7 +1774,12 @@ def get_new_position_of_CTS_cells(All,dieArea,temp_macro,clkpos):
 
 
     All=get_candidate_position_dict(All,max_stage,dieArea,temp_macro)[0]
+    if All=='Error':
+        return 'Error'
+
     position_dict=get_candidate_position_dict(All,max_stage,dieArea,temp_macro)[1]
+    if position_dict=='Error':
+        return 'Error'
 
     for ivalue in All:
         if All[ivalue]['stage'][0]==max_stage and All[ivalue]['direction']=='OUTPUT':
@@ -1815,7 +1820,12 @@ def get_new_position_of_CTS_cells(All,dieArea,temp_macro,clkpos):
 
 
     All=get_candidate_position_dict(All,max_stage-1,dieArea,temp_macro)[0]
+    if All=='Error':
+        return 'Error'
+
     position_dict=get_candidate_position_dict(All,max_stage-1,dieArea,temp_macro)[1]
+    if position_dict=='Error':
+        return 'Error'
 
     for ivalue in All:
         if All[ivalue]['stage'][0]==max_stage-1 and All[ivalue]['direction']=='OUTPUT':
@@ -1848,7 +1858,11 @@ def get_new_position_of_CTS_cells(All,dieArea,temp_macro,clkpos):
     while True:
         if counts==1:
             break
+
         All=get_candidate_position_dict(All,counts,dieArea,temp_macro)[0]
+        if All=='Error':
+            return 'Error'
+
         for ivalue in All:
             if All[ivalue]['stage'][0]==counts-1 and All[ivalue]['direction']=='INPUT':
                 A_position=get_input_position(All[All[ivalue]['to'][0]]['position'],temp_macro)
@@ -2376,22 +2390,24 @@ if __name__ == "__main__":
     temp_buffer_tree=get_group_of_buffer(parts_clk_all,temporary_macro)
     CTS_stage_All=get_stage_with_CTS(clk_All,temp_buffer_tree)
     new_position_All=get_new_position_of_CTS_cells(CTS_stage_All,die_area,temporary_macro,clk_pos)
-    clk_All_with_all_cap=get_new_wire_cap(new_position_All,default_wire_load_model)
-    CLK_mode='real'
-    skew=get_new_Delay_of_nodes_CLK(clk_All_with_all_cap,CLK_mode,wire_mode,liberty_type)[1]
-    clk_All_with_skew=get_new_Delay_of_nodes_CLK(clk_All_with_all_cap,CLK_mode,wire_mode,liberty_type)[0]
+
+    if new_position_All!='Error':
+        clk_All_with_all_cap=get_new_wire_cap(new_position_All,default_wire_load_model)
+        CLK_mode='real'
+        skew=get_new_Delay_of_nodes_CLK(clk_All_with_all_cap,CLK_mode,wire_mode,liberty_type)[1]
+        clk_All_with_skew=get_new_Delay_of_nodes_CLK(clk_All_with_all_cap,CLK_mode,wire_mode,liberty_type)[0]
 
 
-    if wire_mode=='wire_load':
-        file_pathtt='../data/deflef_to_graph_and_verilog/results/test_7800_wire_load_scratch_CTS/scratch_detailed.json'
-        with open(file_pathtt,'w') as f:
-            json.dump([clk_All_with_skew,skew],f,indent=4)
+        if wire_mode=='wire_load':
+            file_pathtt='../data/deflef_to_graph_and_verilog/results/test_7800_wire_load_scratch_CTS/scratch_detailed.json'
+            with open(file_pathtt,'w') as f:
+                json.dump([clk_All_with_skew,skew],f,indent=4)
 
-    else:
-        file_pathpath='../data/deflef_to_graph_and_verilog/results/'+file_address_name+'/test_7800_zfor_clk_'+wire_mode+'_with_skew/'+file_name.split('_revised')[0]+'.json'
-        with open(file_pathpath,'w') as f:
-            json.dump([clk_All_with_skew,skew],f,indent=4)
-            
+        else:
+            file_pathpath='../data/deflef_to_graph_and_verilog/results/'+file_address_name+'/test_7800_zfor_clk_'+wire_mode+'_with_skew/'+file_name.split('_revised')[0]+'.json'
+            with open(file_pathpath,'w') as f:
+                json.dump([clk_All_with_skew,skew],f,indent=4)
+        print('CTS finished')
     print(sys.argv)
 
     '''typed_All=get_type_of_new_graph(netinfo,file_address)
