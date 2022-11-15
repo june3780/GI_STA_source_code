@@ -59,7 +59,6 @@ def get_temp_buffer_def(defname, wire, file_type):
 
     ############# nets, components
 
-
     file = open(will_be_change)
     for idx, line in enumerate(file):
         if line.startswith("END NETS"):
@@ -145,7 +144,6 @@ def get_temp_buffer_def(defname, wire, file_type):
     file.close()
     os.remove(will_be_change.split('.def')[0]+'__temp__temp.def')
     return 0
-
 
 
 

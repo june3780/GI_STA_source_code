@@ -217,6 +217,7 @@ def get_file_name(checking,number):
         strstr='continue'
 
 
+
     if (number==103 and (checking=='Rbank' or checking=='Rbank2')):
         strstr='break'
 
@@ -239,7 +240,6 @@ def get_file_name(checking,number):
 
 
 def get_CTS(set_of_file_types,wire_mode):
-    print(set_of_file_types)
     list_of_file=list()
     start_end_list=list()
     rrr=int()
@@ -272,7 +272,7 @@ def get_CTS(set_of_file_types,wire_mode):
             new_list.append(list_of_file[idx])
             new_list.append(list_of_file[idx+98])
             new_list.append(list_of_file[idx+198])
-        
+
         for idx in range(2):
             new_list.append(list_of_file[idx+196])
             new_list.append(list_of_file[idx+296])
@@ -281,48 +281,45 @@ def get_CTS(set_of_file_types,wire_mode):
             new_list.append(list_of_file[idx+298])
 
 
-    elif set_of_file_types==['rbank', 'Random2_detailed', 'a2_rbank']:
+    elif set_of_file_types==['rbank', 'Random2_detailed']:
         for idx in range(100):
             new_list.append(list_of_file[idx])
             new_list.append(list_of_file[idx+100])
-            new_list.append(list_of_file[idx+200])
 
-    
-    elif set_of_file_types==['random', 'a1_bank', 'Rbank']:
+        deflist=[['a1_bank','a1_rbank'],['random', 'random3'],['Random','Rbank'],['a2_rbank','Rbank2']]
+
+    elif set_of_file_types==['a1_bank','a1_rbank']:
 
         for idx in range(50):
             new_list.append(list_of_file[idx])
-            new_list.append(list_of_file[idx+100])
-            new_list.append(list_of_file[idx+150])
-        
-        for idx in range(50):
             new_list.append(list_of_file[idx+50])
-            new_list.append(list_of_file[idx+200])
 
 
-    elif set_of_file_types==['random3', 'a1_rbank', 'Rbank2']:
-        for idx in range(50):
+    elif set_of_file_types==['random', 'random3']:
+        for idx in range(100):
             new_list.append(list_of_file[idx])
             new_list.append(list_of_file[idx+100])
-            new_list.append(list_of_file[idx+150])
-        
-        for idx in range(50):
-            new_list.append(list_of_file[idx+50])
-            new_list.append(list_of_file[idx+200])
 
     
+    elif set_of_file_types==['Random','Rbank']:
+        for idx in range(100):
+            new_list.append(list_of_file[idx])
+            new_list.append(list_of_file[idx+100])
+
     else:
-        new_list=copy.deepcopy(list_of_file)
+        for idx in range(100):
+            new_list.append(list_of_file[idx])
+            new_list.append(list_of_file[idx+200])
 
+        for idx in range(100):
+            new_list.append(list_of_file[idx+100])
 
 
     for idx in range (len(new_list)):
-        defdef=new_list[idx].split(' ')[0]
-        wire_mode=new_list[idx].split(' ')[1]
-        file_type=new_list[idx].split(' ')[2]
         print(new_list[idx])
         os.system('python3 CTS.py '+new_list[idx])
         os.system('python3 making_def_with_cts.py '+new_list[idx])
+        print()
 
     return 0
 
@@ -336,15 +333,18 @@ if __name__ == "__main__":
 
     deflist=['bank','rbank','random','random3','Random','Random2','Random2_detailed','a1_bank','a1_rbank','a2_bank','a2_rbank','Rbank','Rbank2']
 
-    deflist=['bank','rbank','random','random3','Random']
-    deflist=['Random2','Random2_detailed','a1_bank','a1_rbank']
-    deflist=['a2_bank','a2_rbank','Rbank','Rbank2']
+    ### deflist=['bank','rbank','random','random3','Random']
+    ### deflist=['Random2','Random2_detailed','a1_bank','a1_rbank']
+    ### deflist=['a2_bank','a2_rbank','Rbank','Rbank2']
+
+
+    deflist=['a1_bank', 'random', 'Random', 'a2_rbank'] ###     'bank' 'rbank'
+    deflist=['a1_rbank', 'random3', 'Rbank', 'Rbank2'] ###     'Random2' 'Random2_detailed'
 
     wire_mod=['star']
-    
+
     if if_not_zero==str(0):
         for kkiiddxx in range(len(deflist)):
-            ##print(deflist[kkiiddxx])
             get_def_files(deflist[kkiiddxx])
     
 
@@ -358,12 +358,12 @@ if __name__ == "__main__":
 
 
 
-    deflist=[['bank','Random2','a2_bank'],['rbank','Random2_detailed','a2_rbank'],['random','a1_bank','Rbank'],['random3','a1_rbank','Rbank2'],['Random']]
+    deflist=[['a1_bank','a1_rbank'],['random', 'random3'],['Random','Rbank'],['a2_rbank','Rbank2']]
 
-
-
+    ### deflist=[['bank','Random2','a2_bank'],['rbank','Random2_detailed']]
     if if_not_zero==str(2):
         for iddx in range(len(wire_mod)):
             for kkiiddxx in range(len(deflist)):
                 list_of_set=deflist[kkiiddxx]
+                print(deflist[kkiiddxx])
                 get_CTS(list_of_set,wire_mod[iddx])
