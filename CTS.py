@@ -2407,7 +2407,7 @@ if __name__ == "__main__":
             file_pathpath='../data/deflef_to_graph_and_verilog/results/'+file_address_name+'/test_7800_zfor_clk_'+wire_mode+'_with_skew/'+file_name.split('_revised')[0]+'.json'
             with open(file_pathpath,'w') as f:
                 json.dump([clk_All_with_skew,skew],f,indent=4)
-        print('CTS finished')
+        print('CTS_finished')
     print(sys.argv)
 
     '''typed_All=get_type_of_new_graph(netinfo,file_address)

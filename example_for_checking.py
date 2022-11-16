@@ -8,6 +8,7 @@ import copy
 
 
 def get_file_and_make_directory(wiremode,file_type):
+
     idx=int()
     while True:
         defdef=str()
@@ -19,28 +20,25 @@ def get_file_and_make_directory(wiremode,file_type):
 
         if defdef=='break':
             break
-        
-        if (file_type=='random3' and idx<38) or (file_type=='random' and idx<47):
-            idx=idx+1
-            continue
+        if idx==173:
+            if wiremode=='star':
+                print()
+                print('revising')
+                print()
+                os.system('python3 0_revise_checking.py '+defdef)
+                print()
+                print('parsing')
+                print()
+                os.system('python3 1_for_check.py '+defdef)
+            print()
+            print('calculating')
+            print()
+            os.system('python3 2_for_modifying_graph.py '+defdef+' '+wiremode+' '+file_type)
 
-        if wiremode=='star':
+            print(defdef,file_type,wiremode)
             print()
-            print('revising')
-            print()
-            os.system('python3 0_revise_checking.py '+defdef)
-            print()
-            print('parsing')
-            print()
-            os.system('python3 1_for_check.py '+defdef)
-        print()
-        print('calculating')
-        print()
-        os.system('python3 2_for_modifying_graph.py '+defdef+' '+wiremode+' '+file_type)
-
-        print(defdef,file_type,wiremode)
-        print()
         idx=idx+1
+
     
 
     return 0
@@ -218,7 +216,6 @@ def get_file_name(checking,number):
         strstr='continue'
 
 
-
     if (number==103 and (checking=='Rbank' or checking=='Rbank2')):
         strstr='break'
 
@@ -266,46 +263,45 @@ def get_CTS(set_of_file_types,wire_mode):
 
     new_list=list()
 
+
     del start_end_list[-1]
-    if set_of_file_types==['a2_bank']:
 
-        for idx in range(100):
-            new_list.append(list_of_file[idx+100])
-
-
-    elif set_of_file_types==['rbank', 'Random2_detailed']:
-        for idx in range(100):
-            new_list.append(list_of_file[idx])
-            new_list.append(list_of_file[idx+100])
-
-        ##deflist=[['a1_bank','a1_rbank'],['random', 'random3'],['Random','Rbank'],['a2_rbank','Rbank2']]
-
-    elif set_of_file_types==['a1_bank','a1_rbank']:
-
-        for idx in range(50):
-            new_list.append(list_of_file[idx])
-            new_list.append(list_of_file[idx+50])
-
-
-    elif set_of_file_types==['random', 'random3']:
-        for idx in range(100):
-            new_list.append(list_of_file[idx])
-            new_list.append(list_of_file[idx+100])
 
     
-    elif set_of_file_types==['Random','Rbank']:
-        for idx in range(100):
-            new_list.append(list_of_file[idx])
-            new_list.append(list_of_file[idx+100])
+    if set_of_file_types==['Random','a2_rbank']:
+        for idx in range(35):
+            new_list.append(list_of_file[idx+65])
+
+        for idx in range(5):
+            new_list.append(list_of_file[idx+145])
+
+
+    elif set_of_file_types==['Rbank','a2_rbank']:
+        for idx in range(35):
+            new_list.append(list_of_file[idx+65])
+
+        for idx in range(5):
+            new_list.append(list_of_file[idx+150])
+            
+
+    elif set_of_file_types==['Rbank2','a2_rbank']:
+        for idx in range(15):
+            new_list.append(list_of_file[idx+85])
+
+        for idx in range(25):
+            new_list.append(list_of_file[idx+155])
+
 
     else:
-        for idx in range(100):
-            new_list.append(list_of_file[idx])
-            new_list.append(list_of_file[idx+200])
+        for idx in range(40):
+            ##new_list.append(list_of_file[idx+80])
+            ##print(list_of_file[idx+80])
 
-        for idx in range(100):
-            new_list.append(list_of_file[idx+100])
+            ##new_list.append(list_of_file[idx+120])
+            ##print(list_of_file[idx+120])
 
+            new_list.append(list_of_file[idx+160])
+            ##print(list_of_file[idx+160])
 
     for idx in range (len(new_list)):
         print(new_list[idx])
@@ -329,10 +325,7 @@ if __name__ == "__main__":
     ### deflist=['Random2','Random2_detailed','a1_bank','a1_rbank']
     ### deflist=['a2_bank','a2_rbank','Rbank','Rbank2']
 
-
-    ##deflist=['random', 'Random'] ###     'bank' 'rbank'
-    deflist=['random3', 'Rbank'] ###     'Random2' 'Random2_detailed'
-    ##deflist=['a2_rbank']
+    deflist=['a2_rbank']
     ##deflist=['Rbank2']
 
     wire_mod=['star']
@@ -340,7 +333,7 @@ if __name__ == "__main__":
     if if_not_zero==str(0):
         for kkiiddxx in range(len(deflist)):
             get_def_files(deflist[kkiiddxx])
-    
+
 
 
     if if_not_zero==str(1):
@@ -352,9 +345,12 @@ if __name__ == "__main__":
 
 
 
-    deflist=[['Random','Rbank'],['a2_rbank','Rbank2']]
+    deflist=[['Random','a2_rbank'],['Rbank','a2_rbank'],['Rbank2','a2_rbank']]
+    deflist=[['Random','a2_rbank']]
+    deflist=[['Rbank','a2_rbank']]
+    deflist=[['Rbank2','a2_rbank']]
+    deflist=[['a2_rbank']]
 
-    deflist=[['a2_bank'],['rbank','Random2_detailed'],['a1_bank','a1_rbank'],['random', 'random3']]
     if if_not_zero==str(2):
         for iddx in range(len(wire_mod)):
             for kkiiddxx in range(len(deflist)):
