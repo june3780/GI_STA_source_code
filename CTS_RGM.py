@@ -1908,7 +1908,6 @@ def get_candidate_position_dict(TAll,max_stage,dieArea,temp_macro):
     All=copy.deepcopy(TAll)
     max_minimum_length=float()
     position_dict=dict()
-    
 
     for ivalue in All:
         if All[ivalue]['stage'][0]==max_stage and All[ivalue]['direction']=='OUTPUT' and len(All[ivalue]['to'])==2:
@@ -1920,48 +1919,19 @@ def get_candidate_position_dict(TAll,max_stage,dieArea,temp_macro):
                 else:
                     pos2= All[All[ivalue]['to'][idx]]['position']
             cvalue=(abs(pos1[0]-pos2[0])+abs(pos1[1]-pos2[1]))/2
-            if (pos1[0]<pos2[0] and pos1[1]<pos2[1]) or (pos2[0]<pos1[0] and pos2[1]<pos1[1]):
-                minx=min(pos1[0],pos2[0])
-                maxx=max(pos1[0],pos2[0])
-                miny=min(pos1[1],pos2[1])
-                maxy=max(pos1[1],pos2[1])
-                if abs(pos1[0]-pos2[0])<abs(pos1[1]-pos2[1]):
-                    position_dict.update({ivalue:{'position1':pos1,'position2':pos2,'minimum_distance':cvalue,'candidate_position':[[str(minx)+' -x',str(miny+cvalue)],[str(maxx)+' +x',str(maxy-cvalue)]]}})
-                elif abs(pos1[0]-pos2[0])>abs(pos1[1]-pos2[1]):
-                    position_dict.update({ivalue:{'position1':pos1,'position2':pos2,'minimum_distance':cvalue,'candidate_position':[[str(minx+cvalue),str(miny)+' -y'],[str(maxx-cvalue),str(maxy)+' +y']]}})
-                else:
-                    position_dict.update({ivalue:{'position1':pos1,'position2':pos2,'minimum_distance':cvalue,'candidate_position':[[str(minx)+' -x',str(maxy)+' +y'],[str(maxx)+' +x',str(miny)+' -y']]}})
-                if max_minimum_length<cvalue:
-                    max_minimum_length=cvalue
-            elif (pos1[0]<pos2[0] and pos1[1]>pos2[1]) or (pos2[0]<pos1[0] and pos2[1]>pos1[1]):
-                minx=min(pos1[0],pos2[0])
-                maxx=max(pos1[0],pos2[0])
-                miny=min(pos1[1],pos2[1])
-                maxy=max(pos1[1],pos2[1])
-                if abs(pos1[0]-pos2[0])<abs(pos1[1]-pos2[1]):
-                    position_dict.update({ivalue:{'position1':pos1,'position2':pos2,'minimum_distance':cvalue,'candidate_position':[[str(minx)+' -x',str(maxy-cvalue)],[str(maxx)+' +x',str(miny+cvalue)]]}})
-                elif abs(pos1[0]-pos2[0])>abs(pos1[1]-pos2[1]):
-                    position_dict.update({ivalue:{'position1':pos1,'position2':pos2,'minimum_distance':cvalue,'candidate_position':[[str(maxx-cvalue),str(miny)+' -y'],[str(minx+cvalue),str(maxy)+' +y']]}})
-                else:
-                    position_dict.update({ivalue:{'position1':pos1,'position2':pos2,'minimum_distance':cvalue,'candidate_position':[[str(minx)+' -x',str(miny)+' -y'],[str(maxx)+' +x',str(maxy)+' +y']]}})
-                if max_minimum_length<cvalue:
-                    max_minimum_length=cvalue
-            elif pos1[0]==pos2[0]:
-                position_dict.update({ivalue:{'position1':pos1,'position2':pos2,'minimum_distance':cvalue,'candidate_position':[[str(pos1[0])+' -x',str(min(pos1[1],pos2[1])+cvalue)],[str(pos1[0])+' +x',str(min(pos1[1],pos2[1])+cvalue)]]}})
-            elif pos1[1]==pos2[1]:
-                position_dict.update({ivalue:{'position1':pos1,'position2':pos2,'minimum_distance':cvalue,'candidate_position':[[str(min(pos1[0],pos2[0])+cvalue),str(pos1[1])+' -y'],[str(min(pos1[0],pos2[0])+cvalue),str(pos1[1])+' +y']]}})
-    
+            midpoint=[abs(pos1[0]+pos2[0])/2,abs(pos1[1]+pos2[1])/2]
+            position_dict.update({ivalue:{'position1':pos1,'position2':pos2,'minimum_distance':cvalue,'candidate_position':[midpoint]}})
+            if max_minimum_length<cvalue:
+                max_minimum_length=cvalue
+###########################여기서부터 코딩
+
         elif All[ivalue]['stage'][0]==max_stage and All[ivalue]['direction']=='OUTPUT' and len(All[ivalue]['to'])==1:
             pos1=list()
             pos1= All[All[ivalue]['to'][0]]['position']
             position_dict.update({ivalue:{'position1':pos1,'minimum_distance':float(0),'candidate_position':[[str(pos1[0])+' -x',str(pos1[1])],[str(pos1[0])+' +x',str(pos1[1])],[str(pos1[0]),str(pos1[1])+' -y'],[str(pos1[0]),str(pos1[1])+' +y']]}})
 
-
     for ivalue in position_dict:
-        if position_dict[ivalue]['minimum_distance'] == max_minimum_length:
-            All[ivalue].update({'position':[(position_dict[ivalue]['position1'][0]+position_dict[ivalue]['position2'][0])/2,(position_dict[ivalue]['position1'][1]+position_dict[ivalue]['position2'][1])/2]})
-            position_dict[ivalue]['candidate_position']=[[(position_dict[ivalue]['position1'][0]+position_dict[ivalue]['position2'][0])/2,(position_dict[ivalue]['position1'][1]+position_dict[ivalue]['position2'][1])/2]]
-        else:
+        if All[ivalue]['stage'][0]==max_stage and All[ivalue]['direction']=='OUTPUT' and len(All[ivalue]['to'])==1:
             for idx in range(len(position_dict[ivalue]['candidate_position'])):
                 for jdx in range(len(position_dict[ivalue]['candidate_position'][idx])):
                     if ('x' in position_dict[ivalue]['candidate_position'][idx][jdx] and 'y' not in position_dict[ivalue]['candidate_position'][idx][jdx]) or ('x' not in position_dict[ivalue]['candidate_position'][idx][jdx] and 'y' in position_dict[ivalue]['candidate_position'][idx][jdx]):
@@ -1972,10 +1942,12 @@ def get_candidate_position_dict(TAll,max_stage,dieArea,temp_macro):
                     else:
                         position_dict[ivalue]['candidate_position'][idx][jdx]=float(position_dict[ivalue]['candidate_position'][idx][jdx])
 
-
+        del position_dict[ivalue]['minimum_distance']
+        del position_dict[ivalue]['position1']
+        if 'position2' in position_dict[ivalue]:
+            del position_dict[ivalue]['position2']
 
         willdel=list()
-        candidate_int=int(len(position_dict[ivalue]['candidate_position']))
         for jdx in range(len(position_dict[ivalue]['candidate_position'])):
             if position_dict[ivalue]['candidate_position'][jdx][0]<dieArea[0][0] or position_dict[ivalue]['candidate_position'][jdx][1]<dieArea[0][1] or position_dict[ivalue]['candidate_position'][jdx][0]>dieArea[1][0] or position_dict[ivalue]['candidate_position'][jdx][1]>dieArea[1][1]:
                 willdel.append(position_dict[ivalue]['candidate_position'][jdx])
@@ -1984,36 +1956,17 @@ def get_candidate_position_dict(TAll,max_stage,dieArea,temp_macro):
             A_position=get_input_position(position_dict[ivalue]['candidate_position'][jdx],temp_macro)
             if A_position[0]<dieArea[0][0] or A_position[1]<dieArea[0][1] or A_position[0]>dieArea[1][0] or A_position[1]>dieArea[1][1]:
                 willdel.append(position_dict[ivalue]['candidate_position'][jdx])
-        
-        result=list()
-        for jvalue in willdel:
-            if jvalue not in result:
-                result.append(jvalue)
-        willdel=result
+            
 
-        restore_candidate=list()
+
+
         for jdx in range(len(willdel)):
             if willdel[jdx] in position_dict[ivalue]['candidate_position']:
-                if len(willdel)==candidate_int:
-                    restore_candidate.append(willdel[jdx])
                 position_dict[ivalue]['candidate_position'].remove(willdel[jdx])
 
-        
-
         if len(position_dict[ivalue]['candidate_position'])==0:
-            print(restore_candidate)
-            print(position_dict[ivalue])
-            print('Error(Midpoints are not in die_area): '+ivalue)
-            print()
-            position_dict[ivalue]['candidate_position'].append([(position_dict[ivalue]['position1'][0]+position_dict[ivalue]['position2'][0])/2,(position_dict[ivalue]['position1'][1]+position_dict[ivalue]['position2'][1])/2])
-
-
-
-        del position_dict[ivalue]['minimum_distance']
-        del position_dict[ivalue]['position1']
-        if 'position2' in position_dict[ivalue]:
-            del position_dict[ivalue]['position2']
-
+            print('Error: Some midpoint doesn\'t exist in die Area : '+ivalue)
+        
         elif len(position_dict[ivalue]['candidate_position'])==1:
             All[ivalue].update({'position':position_dict[ivalue]['candidate_position'][0]})
 
@@ -2059,6 +2012,8 @@ def get_candidate_position_dict(TAll,max_stage,dieArea,temp_macro):
                     second_position=position_dict[with_position[1]]['candidate_position']
                     All[with_position[0]].update({'position':get_hpwl_by_two_positions(first_position,second_position)[0]})
                     All[with_position[1]].update({'position':get_hpwl_by_two_positions(first_position,second_position)[1]})
+
+
     return [All,position_dict]
 
 
@@ -2421,7 +2376,7 @@ if __name__ == "__main__":
                 json.dump([clk_All_with_skew,skew],f,indent=4)
 
         else:
-            file_pathpath='../data/deflef_to_graph_and_verilog/results/'+file_address_name+'/test_7800_zfor_clk_'+wire_mode+'_with_skew/'+file_name.split('_revised')[0]+'.json'
+            file_pathpath='../data/deflef_to_graph_and_verilog/results/'+file_address_name+'/test_7800_zfor_clk_'+wire_mode+'_with_skew_RGM/'+file_name.split('_revised')[0]+'.json'
             with open(file_pathpath,'w') as f:
                 json.dump([clk_All_with_skew,skew],f,indent=4)
         print('CTS_finished')
@@ -2452,6 +2407,7 @@ if __name__ == "__main__":
 
     else:
         file_pathpath='../data/deflef_to_graph_and_verilog/results/'+file_address_name+'/test_7800_'+wire_mode+'_with_skew/'+file_name.split('_revised')[0]+'.json'
+        file_pathpath='temp.json'
         with open(file_pathpath,'w') as f:
             json.dump(total_delay,f,indent=4)
 

@@ -1,16 +1,26 @@
 22bank_detailed.def star bank failed
+
 Random1103_oneiter_56_detailed.def star Random2 failed
 Random1103_oneiter_87_detailed.def star Random2 failed
 Random1103_oneiter_89_detailed.def star Random2 failed
+
 Random1103_oneiter_25_detailed_detailed.def star Random2_detailed failed
 Random1103_oneiter_48_detailed_detailed.def star Random2_detailed failed
+
 random76_detailed.def star random failed
+
 3_random_76.def star random3 failed
+
 rbank30_detailed.def star Rbank2 failed
-rbank49.def star Rbank failed
-Random49_detailed.def star Random failed
 rbank87_detailed.def star Rbank2 failed
+
+rbank49.def star Rbank failed
+
+Random49_detailed.def star Random failed
 Random66_detailed.def star Random failed
 Random80_detailed.def star Random failed
 Random84_detailed.def star Random failed
+
 a2_144rbank.txt.def star a2_rbank failed
+
+

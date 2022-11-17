@@ -266,48 +266,29 @@ def get_CTS(set_of_file_types,wire_mode):
 
     del start_end_list[-1]
 
-
+    if set_of_file_types==['a1_bank','a1_rbank','bank']:
+        for idx in range(50):
+            new_list.append(list_of_file[idx])
+        for idx in range(50):
+            new_list.append(list_of_file[idx+50])
+        for idx in range(98):
+            new_list.append(list_of_file[idx+100])
     
-    if set_of_file_types==['Random','a2_rbank']:
-        for idx in range(35):
-            new_list.append(list_of_file[idx+65])
+    elif set_of_file_types==['a2_bank'] or set_of_file_types==['a2_rbank']:
+        for idx in range(200):
+            new_list.append(list_of_file[idx])
 
-        for idx in range(5):
-            new_list.append(list_of_file[idx+145])
-
-
-    elif set_of_file_types==['Rbank','a2_rbank']:
-        for idx in range(35):
-            new_list.append(list_of_file[idx+65])
-
-        for idx in range(5):
-            new_list.append(list_of_file[idx+150])
-            
-
-    elif set_of_file_types==['Rbank2','a2_rbank']:
-        for idx in range(15):
-            new_list.append(list_of_file[idx+85])
-
-        for idx in range(25):
-            new_list.append(list_of_file[idx+155])
-
-
-    else:
-        for idx in range(40):
-            ##new_list.append(list_of_file[idx+80])
-            ##print(list_of_file[idx+80])
-
-            ##new_list.append(list_of_file[idx+120])
-            ##print(list_of_file[idx+120])
-
-            new_list.append(list_of_file[idx+160])
-            ##print(list_of_file[idx+160])
+    elif set_of_file_types==['Random2','Random2_detailed'] or set_of_file_types==['rbank','random'] or set_of_file_types==['random3','Random'] or set_of_file_types==['Rbank','Rbank2']:
+        for idx in range(100):
+            new_list.append(list_of_file[idx])
+        for idx in range(100):
+            new_list.append(list_of_file[idx+100])
 
     for idx in range (len(new_list)):
         print(new_list[idx])
-        os.system('python3 CTS.py '+new_list[idx])
-        os.system('python3 making_def_with_cts.py '+new_list[idx])
-        print()
+        os.system('python3 CTS_RGM.py '+new_list[idx])
+        os.system('python3 making_def_with_cts_RGM.py '+new_list[idx])
+        ##print()
 
     return 0
 
@@ -344,13 +325,15 @@ if __name__ == "__main__":
                 copy_scratch(wire_mod[iddx],deflist[kkiiddxx])
 
 
+    deflist=[['a1_bank','a1_rbank','bank']]
 
-    deflist=[['Random','a2_rbank'],['Rbank','a2_rbank'],['Rbank2','a2_rbank']]
-    deflist=[['Random','a2_rbank']]
-    deflist=[['Rbank','a2_rbank']]
-    deflist=[['Rbank2','a2_rbank']]
+    deflist=[['a2_bank']]
     deflist=[['a2_rbank']]
 
+    deflist=[['Random2','Random2_detailed']]
+    deflist=[['rbank','random']]
+    deflist=[['random3','Random']]
+    deflist=[['Rbank','Rbank2']]
     if if_not_zero==str(2):
         for iddx in range(len(wire_mod)):
             for kkiiddxx in range(len(deflist)):
