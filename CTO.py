@@ -1947,13 +1947,11 @@ def get_candidate_position_dict(TAll,max_stage,dieArea,temp_macro):
                 else:
                     position_dict.update({ivalue:{'position1':pos1,'position2':pos2,'minimum_distance':cvalue,'candidate_position':[[str(minx)+' -x',str(miny)+' -y'],[str(maxx)+' +x',str(maxy)+' +y']]}})
 
-            elif pos1[0]==pos2[0] and pos1[1]!=pos2[1]:
+            elif pos1[0]==pos2[0]:
                 position_dict.update({ivalue:{'position1':pos1,'position2':pos2,'minimum_distance':cvalue,'candidate_position':[[str(pos1[0])+' -x',str(min(pos1[1],pos2[1])+cvalue)],[str(pos1[0])+' +x',str(min(pos1[1],pos2[1])+cvalue)]]}})
-            elif pos1[1]==pos2[1] and pos1[0]!=pos2[0]:
+            elif pos1[1]==pos2[1]:
                 position_dict.update({ivalue:{'position1':pos1,'position2':pos2,'minimum_distance':cvalue,'candidate_position':[[str(min(pos1[0],pos2[0])+cvalue),str(pos1[1])+' -y'],[str(min(pos1[0],pos2[0])+cvalue),str(pos1[1])+' +y']]}})
-            elif pos1[0]==pos2[0] and pos1[1]==pos2[1]:
-                position_dict.update({ivalue:{'position1':pos1,'minimum_distance':float(0),'candidate_position':[[str(pos1[0])+' -x',str(pos1[1])],[str(pos1[0])+' +x',str(pos1[1])],[str(pos1[0]),str(pos1[1])+' -y'],[str(pos1[0]),str(pos1[1])+' +y']]}})
-
+    
         elif All[ivalue]['stage'][0]==max_stage and All[ivalue]['direction']=='OUTPUT' and len(All[ivalue]['to'])==1:
             pos1=list()
             pos1= All[All[ivalue]['to'][0]]['position']
@@ -1980,7 +1978,6 @@ def get_candidate_position_dict(TAll,max_stage,dieArea,temp_macro):
 
 
     max_minimum_length=list(list_table[0].values())[0]
-    
     keys_list=list()
     values_list=list()
     for idx in range(len(list_table)):
@@ -1989,8 +1986,6 @@ def get_candidate_position_dict(TAll,max_stage,dieArea,temp_macro):
 
     for ivalue in position_dict:
         if position_dict[ivalue]['minimum_distance'] == max_minimum_length:
-
-
             All[ivalue].update({'position':[(position_dict[ivalue]['position1'][0]+position_dict[ivalue]['position2'][0])/2,(position_dict[ivalue]['position1'][1]+position_dict[ivalue]['position2'][1])/2]})
             position_dict[ivalue]['candidate_position']=[[(position_dict[ivalue]['position1'][0]+position_dict[ivalue]['position2'][0])/2,(position_dict[ivalue]['position1'][1]+position_dict[ivalue]['position2'][1])/2]]
         else:
@@ -2036,12 +2031,8 @@ def get_candidate_position_dict(TAll,max_stage,dieArea,temp_macro):
 #####################################################################################
 
         if len(position_dict[ivalue]['candidate_position'])==0:
-            filetemp='temp.txt'
-            fff=open(filetemp,'a')
-            fff.write('Error(Midpoints are not in die_area): '+ivalue+' '+str(sys.argv)+'\n')
-            fff.close()
-
             print('Error(Midpoints are not in die_area): '+ivalue)
+
             if len(restore_candidate) ==2:
                 pos1=position_dict[ivalue]['position1']
                 pos2=position_dict[ivalue]['position2']
@@ -2355,6 +2346,1133 @@ def get_input_position(listlist,temp_macro):
 
 
 
+def get_type_of_CK_max_minus_two(All,die_Area,temp_macro):
+
+    max_stage=int()
+
+    for ivalue in All:
+        if All[ivalue]['stage'][0]>max_stage:
+            max_stage=All[ivalue]['stage'][0]
+
+
+    list_4=list()
+    list_5=list()
+    for ivalue in All:
+        if All[ivalue]['stage'][0]==max_stage-2 and All[ivalue]['direction']=='OUTPUT':
+            first_OUTPUT11=All[All[ivalue]['to'][0]]['to'][0]
+            second_OUTPUT11=All[All[ivalue]['to'][1]]['to'][0]
+            if (len(All[first_OUTPUT11]['to'])==2 and len(All[second_OUTPUT11]['to'])==1) or (len(All[first_OUTPUT11]['to'])==1 and len(All[second_OUTPUT11]['to'])==2):
+                list_5.append(ivalue)
+            else:
+                list_4.append(ivalue)
+
+
+    list_4_count=int()
+    who_has_midpoint=str()
+    who_is_11OUTPUT=str()
+    who_is_10OUTPUT=str()
+
+    position_dict_for_4children=dict()
+    for ivalue in list_4:
+        
+        first_OUTPUT11=All[All[ivalue]['to'][0]]['to'][0]
+        second_OUTPUT11=All[All[ivalue]['to'][1]]['to'][0]
+        
+        first_OUTPUT12=All[All[first_OUTPUT11]['to'][0]]['to'][0]
+        fO12=first_OUTPUT12
+        second_OUTPUT12=All[All[second_OUTPUT11]['to'][0]]['to'][0]
+        sO12=second_OUTPUT12
+
+        fIfO12=All[first_OUTPUT12]['to'][0]
+        fIsO12=All[first_OUTPUT12]['to'][1]
+        sIfO12=All[second_OUTPUT12]['to'][0]
+        sIsO12=All[second_OUTPUT12]['to'][1]
+
+        position_dict_for_4children.update({ivalue:{first_OUTPUT12:[All[fIfO12]['position'],All[fIsO12]['position']],first_OUTPUT12+'_position':All[first_OUTPUT12]['position'],second_OUTPUT12:[All[sIfO12]['position'],All[sIsO12]['position']],second_OUTPUT12+'_position':All[second_OUTPUT12]['position']}})
+        
+        if (All[fO12]['position'][0]>All[fIfO12]['position'][0] and All[fO12]['position'][0]<All[fIsO12]['position'][0]) or (All[fO12]['position'][0]<All[fIfO12]['position'][0] and All[fO12]['position'][0]>All[fIsO12]['position'][0]):
+            if (All[fO12]['position'][1]>All[fIfO12]['position'][1] and All[fO12]['position'][1]<All[fIsO12]['position'][1]) or (All[fO12]['position'][1]<All[fIfO12]['position'][1] and All[fO12]['position'][1]>All[fIsO12]['position'][1]):
+                list_4_count=1
+                who_has_midpoint=first_OUTPUT12
+                who_is_11OUTPUT=first_OUTPUT11
+                who_is_10OUTPUT=ivalue
+
+        if (All[sO12]['position'][0]>All[sIfO12]['position'][0] and All[sO12]['position'][0]<All[sIsO12]['position'][0]) or (All[sO12]['position'][0]<All[sIfO12]['position'][0] and All[sO12]['position'][0]>All[sIsO12]['position'][0]):
+            if (All[sO12]['position'][1]>All[sIfO12]['position'][1] and All[sO12]['position'][1]<All[sIsO12]['position'][1]) or (All[sO12]['position'][1]<All[sIfO12]['position'][1] and All[sO12]['position'][1]>All[sIsO12]['position'][1]):
+                list_4_count=1
+                who_has_midpoint=second_OUTPUT12
+                who_is_11OUTPUT=second_OUTPUT11
+                who_is_10OUTPUT=ivalue
+
+    list_5_count=int()
+    position_dict_for_5children=dict()
+    for ivalue in list_5:
+        candidate1=str()
+        candidate2=str()
+        first_OUTPUT11=All[All[ivalue]['to'][0]]['to'][0]
+        second_OUTPUT11=All[All[ivalue]['to'][1]]['to'][0]
+
+
+        single_OUTPUT12=str()
+        not_single_withsingle_OUTPUT12=str()
+        not_single_withoutsingle_OUTPUT12=str()
+
+        
+        if len(All[first_OUTPUT11]['to'])==2:
+            candidate1=first_OUTPUT11
+            candidate2=second_OUTPUT11
+            for kdx in range(len(All[first_OUTPUT11]['to'])):
+                temp_INPUT11=All[first_OUTPUT11]['to'][kdx]
+                if len(All[All[temp_INPUT11]['to'][0]]['to'])==1:
+                    single_OUTPUT12=All[temp_INPUT11]['to'][0]
+                else:
+                    not_single_withsingle_OUTPUT12=All[temp_INPUT11]['to'][0]
+            not_single_withoutsingle_OUTPUT12=All[All[second_OUTPUT11]['to'][0]]['to'][0]
+
+
+        elif len(All[second_OUTPUT11]['to'])==2:
+            candidate1=second_OUTPUT11
+            candidate2=first_OUTPUT11
+            for kdx in range(len(All[second_OUTPUT11]['to'])):
+                temp_INPUT11=All[second_OUTPUT11]['to'][kdx]
+                if len(All[All[temp_INPUT11]['to'][0]]['to'])==1:
+                    single_OUTPUT12=All[temp_INPUT11]['to'][0]
+                else:
+                    not_single_withsingle_OUTPUT12=All[temp_INPUT11]['to'][0]
+            not_single_withoutsingle_OUTPUT12=All[All[first_OUTPUT11]['to'][0]]['to'][0]
+
+        fIfO12=All[not_single_withsingle_OUTPUT12]['to'][0]
+        fIsO12=All[not_single_withsingle_OUTPUT12]['to'][1]
+        sIfO12=All[not_single_withoutsingle_OUTPUT12]['to'][0]
+        sIsO12=All[not_single_withoutsingle_OUTPUT12]['to'][1]
+
+        position_dict_for_5children.update({ivalue:{not_single_withsingle_OUTPUT12:[All[fIfO12]['position'],All[fIsO12]['position']],not_single_withsingle_OUTPUT12+'_position':All[not_single_withsingle_OUTPUT12]['position'],not_single_withoutsingle_OUTPUT12:[All[sIfO12]['position'],All[sIsO12]['position']],not_single_withoutsingle_OUTPUT12+'_position':All[not_single_withoutsingle_OUTPUT12]['position'],single_OUTPUT12:[All[All[single_OUTPUT12]['to'][0]]['position']],single_OUTPUT12+'_position':All[single_OUTPUT12]['position']}})
+
+        if (All[not_single_withsingle_OUTPUT12]['position'][0]>min(All[fIfO12]['position'][0],All[fIsO12]['position'][0]) and All[not_single_withsingle_OUTPUT12]['position'][0]<max(All[fIfO12]['position'][0],All[fIsO12]['position'][0])):
+            if (All[not_single_withsingle_OUTPUT12]['position'][1]>min(All[fIfO12]['position'][1],All[fIsO12]['position'][1]) and All[not_single_withsingle_OUTPUT12]['position'][1]<max(All[fIfO12]['position'][1],All[fIsO12]['position'][1])):
+                list_5_count=1
+                who_has_midpoint=not_single_withsingle_OUTPUT12
+                who_is_11OUTPUT=candidate1
+                who_is_10OUTPUT=ivalue
+
+        if (All[not_single_withoutsingle_OUTPUT12]['position'][0]>min(All[sIfO12]['position'][0], All[sIsO12]['position'][0]) and All[not_single_withoutsingle_OUTPUT12]['position'][0]<max(All[sIfO12]['position'][0],All[sIsO12]['position'][0])):
+            if (All[not_single_withoutsingle_OUTPUT12]['position'][1]>min(All[sIfO12]['position'][1], All[sIsO12]['position'][1]) and All[not_single_withoutsingle_OUTPUT12]['position'][1]<max(All[sIfO12]['position'][1],All[sIsO12]['position'][1])):
+                list_5_count=1
+                who_has_midpoint=not_single_withoutsingle_OUTPUT12
+                who_is_11OUTPUT=candidate2
+                who_is_10OUTPUT=ivalue
+        
+    position_dict_for_4children_candidates=dict()
+
+    for ivalue in position_dict_for_4children:
+        position_dict_for_4children_candidates.update({ivalue:{}})
+
+        for kvalue in position_dict_for_4children[ivalue]:
+            if '_position' not in kvalue:
+                position_dict_for_4children_candidates[ivalue].update({kvalue:{'position':position_dict_for_4children[ivalue][kvalue+'_position'],'target_position':position_dict_for_4children[ivalue][kvalue]}})
+    
+    copy_of_4=copy.deepcopy(position_dict_for_4children_candidates)
+    for ivalue in copy_of_4:
+        all_position_group=list()
+        for kvalue in copy_of_4[ivalue]:
+            position_dict_for_4children_candidates[ivalue][kvalue].update({'type':'not_single'})
+            all_position_group.append(position_dict_for_4children_candidates[ivalue][kvalue]['target_position'][0])
+            all_position_group.append(position_dict_for_4children_candidates[ivalue][kvalue]['target_position'][1])
+            
+        
+        
+        for kvalue in copy_of_4[ivalue]:
+            checking_position_group=copy.deepcopy(all_position_group)
+            checking_position_group.remove(position_dict_for_4children_candidates[ivalue][kvalue]['target_position'][0])
+            checking_position_group.remove(position_dict_for_4children_candidates[ivalue][kvalue]['target_position'][1])
+            position_dict_for_4children_candidates[ivalue][kvalue]['target_position'].append(checking_position_group[0])
+            position_dict_for_4children_candidates[ivalue][kvalue]['target_position'].append(checking_position_group[1])
+
+    position_dict_for_5children_candidates=dict()
+
+    for ivalue in position_dict_for_5children:
+        position_dict_for_5children_candidates.update({ivalue:{}})
+
+        for kvalue in position_dict_for_5children[ivalue]:
+            if '_position' not in kvalue:
+                position_dict_for_5children_candidates[ivalue].update({kvalue:{'position':position_dict_for_5children[ivalue][kvalue+'_position'],'target_position':position_dict_for_5children[ivalue][kvalue]}})
+    
+
+    copy_of_5=copy.deepcopy(position_dict_for_5children_candidates)
+    for ivalue in copy_of_5:
+        all_position_group=list()
+        for kvalue in copy_of_5[ivalue]:
+            
+            if len(position_dict_for_5children_candidates[ivalue][kvalue]['target_position'])==1:
+                position_dict_for_5children_candidates[ivalue][kvalue].update({'type':'single'})
+                all_position_group.append(position_dict_for_5children_candidates[ivalue][kvalue]['target_position'][0])
+
+            elif len(position_dict_for_5children_candidates[ivalue][kvalue]['target_position'])==2:
+
+                position_dict_for_5children_candidates[ivalue][kvalue].update({'type':'not_single'})
+                all_position_group.append(position_dict_for_5children_candidates[ivalue][kvalue]['target_position'][0])
+                all_position_group.append(position_dict_for_5children_candidates[ivalue][kvalue]['target_position'][1])
+
+
+        
+
+        for kvalue in copy_of_5[ivalue]:
+            proto_position=copy.deepcopy(position_dict_for_5children_candidates[ivalue][kvalue]['target_position'])
+
+            checking_position_group=copy.deepcopy(all_position_group)
+
+            if len(proto_position)==1:
+                checking_position_group.remove(position_dict_for_5children_candidates[ivalue][kvalue]['target_position'][0])
+            elif len(proto_position)==2:
+                checking_position_group.remove(position_dict_for_5children_candidates[ivalue][kvalue]['target_position'][1])
+                checking_position_group.remove(position_dict_for_5children_candidates[ivalue][kvalue]['target_position'][0])
+
+
+            for jjdx in range(len(checking_position_group)):
+                position_dict_for_5children_candidates[ivalue][kvalue]['target_position'].append(checking_position_group[jjdx])
+
+    
+
+
+    ##print(json.dumps(position_dict_for_4children_candidates,indent=4))
+    ttdx=int()
+
+    max_minimum_wire_length=float()
+    whohas_max_minimum_12OUTPUT=str()
+    whohas_max_minimum_10OUTPUT=str()
+
+    for ivalue in position_dict_for_5children_candidates:
+        ttdx=ttdx+1
+        ##die_Area
+        for kvalue in position_dict_for_5children_candidates[ivalue]:
+            if kvalue==who_has_midpoint:
+                position_dict_for_5children_candidates[ivalue][kvalue]['position']=get_point_for_midpoint(position_dict_for_5children_candidates[ivalue][kvalue]['target_position'][0:2])
+
+            from_max_output_position=position_dict_for_5children_candidates[ivalue][kvalue]['position']
+            origin_target1=list()
+            origin_target2=list()
+
+            if position_dict_for_5children_candidates[ivalue][kvalue]['type']=='single':
+                origin_target1=position_dict_for_5children_candidates[ivalue][kvalue]['target_position'][0]
+                origin_target2=position_dict_for_5children_candidates[ivalue][kvalue]['target_position'][0]
+            else:
+                origin_target1=position_dict_for_5children_candidates[ivalue][kvalue]['target_position'][0]
+                origin_target2=position_dict_for_5children_candidates[ivalue][kvalue]['target_position'][1]
+                
+            
+            group_of_list=get_new_position_from_max_stage(from_max_output_position,origin_target1,origin_target2)
+
+
+            if len(group_of_list[2])==0:
+                del group_of_list[2]
+            if len(group_of_list[1])==0:
+                del group_of_list[1]
+            if len(group_of_list[0])==0:
+                del group_of_list[0]
+
+            temp_group_of_list=list()
+            for igdx in range(len(group_of_list)):
+                if group_of_list[igdx]!=[]:
+                    temp_x_coord=float()
+                    temp_y_coord=float()
+                    if type(group_of_list[igdx][0])==type(''):
+                        temp_x_coord=float(group_of_list[igdx][0].split(' ')[0])
+                        temp_group_of_list.append([temp_x_coord,group_of_list[igdx][1]])
+                    
+                    elif type(group_of_list[igdx][1])==type(''):
+                        temp_y_coord=float(group_of_list[igdx][1].split(' ')[0])
+                        temp_group_of_list.append([group_of_list[igdx][0],temp_y_coord])
+
+
+            position_dict_for_5children_candidates[ivalue][kvalue].update({'group_of_list':group_of_list,'zero_group_of_list':temp_group_of_list})
+            position_dict_for_5children_candidates[ivalue][kvalue].update({'star_length':[]})
+
+            maximum_wire_length_among_us=float()
+
+            for igdx in range(len(position_dict_for_5children_candidates[ivalue][kvalue]['zero_group_of_list'])):
+                listlist=list()
+                listlist.append(position_dict_for_5children_candidates[ivalue][kvalue]['zero_group_of_list'][igdx])
+                
+                for kigdx in range(len(position_dict_for_5children_candidates[ivalue][kvalue]['target_position'])):
+                    listlist.append(position_dict_for_5children_candidates[ivalue][kvalue]['target_position'][kigdx])
+                position_dict_for_5children_candidates[ivalue][kvalue]['star_length'].append(get_new_wirelength_star(listlist))
+                if maximum_wire_length_among_us<get_new_wirelength_star(listlist):
+                    maximum_wire_length_among_us=get_new_wirelength_star(listlist)
+
+            where_minimum=list()
+            minimum_wire_length_among_us=maximum_wire_length_among_us
+            for igdx in range(len(position_dict_for_5children_candidates[ivalue][kvalue]['star_length'])):
+                if minimum_wire_length_among_us>position_dict_for_5children_candidates[ivalue][kvalue]['star_length'][igdx]:
+                    minimum_wire_length_among_us=position_dict_for_5children_candidates[ivalue][kvalue]['star_length'][igdx]
+                
+                    where_minimum=[igdx]
+                elif minimum_wire_length_among_us==position_dict_for_5children_candidates[ivalue][kvalue]['star_length'][igdx]:
+                    where_minimum.append(igdx)
+
+            position_dict_for_5children_candidates[ivalue][kvalue].update({'minimum_wire_length':minimum_wire_length_among_us,'where_is_minimum':where_minimum})
+        
+        for kvalue in position_dict_for_5children_candidates[ivalue]:
+            if max_minimum_wire_length<position_dict_for_5children_candidates[ivalue][kvalue]['minimum_wire_length']:
+                max_minimum_wire_length=position_dict_for_5children_candidates[ivalue][kvalue]['minimum_wire_length']
+                whohas_max_minimum_12OUTPUT=kvalue
+                whohas_max_minimum_10OUTPUT=ivalue
+
+
+
+    ttdx=int()
+
+    for ivalue in position_dict_for_4children_candidates:
+        ttdx=ttdx+1
+
+        for kvalue in position_dict_for_4children_candidates[ivalue]:
+            if kvalue==who_has_midpoint:
+                position_dict_for_4children_candidates[ivalue][kvalue]['position']=get_point_for_midpoint(position_dict_for_4children_candidates[ivalue][kvalue]['target_position'][0:2])
+
+            from_max_output_position=position_dict_for_4children_candidates[ivalue][kvalue]['position']
+            origin_target1=list()
+            origin_target2=list()
+
+            if position_dict_for_4children_candidates[ivalue][kvalue]['type']=='single':
+                origin_target1=position_dict_for_4children_candidates[ivalue][kvalue]['target_position'][0]
+                origin_target2=position_dict_for_4children_candidates[ivalue][kvalue]['target_position'][0]
+            else:
+                origin_target1=position_dict_for_4children_candidates[ivalue][kvalue]['target_position'][0]
+                origin_target2=position_dict_for_4children_candidates[ivalue][kvalue]['target_position'][1]
+            
+
+            group_of_list=get_new_position_from_max_stage(from_max_output_position,origin_target1,origin_target2)
+
+            if len(group_of_list[2])==0:
+                del group_of_list[2]
+            if len(group_of_list[1])==0:
+                del group_of_list[1]
+            if len(group_of_list[0])==0:
+                del group_of_list[0]
+
+            temp_group_of_list=list()
+            for igdx in range(len(group_of_list)):
+                if group_of_list[igdx]!=[]:
+                    temp_x_coord=float()
+                    temp_y_coord=float()
+                    if type(group_of_list[igdx][0])==type(''):
+                        temp_x_coord=float(group_of_list[igdx][0].split(' ')[0])
+                        temp_group_of_list.append([temp_x_coord,group_of_list[igdx][1]])
+                    
+                    elif type(group_of_list[igdx][1])==type(''):
+                        temp_y_coord=float(group_of_list[igdx][1].split(' ')[0])
+                        temp_group_of_list.append([group_of_list[igdx][0],temp_y_coord])
+
+
+            position_dict_for_4children_candidates[ivalue][kvalue].update({'group_of_list':group_of_list,'zero_group_of_list':temp_group_of_list})
+            position_dict_for_4children_candidates[ivalue][kvalue].update({'star_length':[]})
+
+
+            maximum_wire_length_among_us=float()
+            for igdx in range(len(position_dict_for_4children_candidates[ivalue][kvalue]['zero_group_of_list'])):
+                listlist=list()
+                listlist.append(position_dict_for_4children_candidates[ivalue][kvalue]['zero_group_of_list'][igdx])
+                
+                for kigdx in range(len(position_dict_for_4children_candidates[ivalue][kvalue]['target_position'])):
+                    listlist.append(position_dict_for_4children_candidates[ivalue][kvalue]['target_position'][kigdx])
+                position_dict_for_4children_candidates[ivalue][kvalue]['star_length'].append(get_new_wirelength_star(listlist))
+                if maximum_wire_length_among_us<get_new_wirelength_star(listlist):
+                    maximum_wire_length_among_us=get_new_wirelength_star(listlist)
+
+            where_minimum=list()
+            minimum_wire_length_among_us=maximum_wire_length_among_us
+            for igdx in range(len(position_dict_for_4children_candidates[ivalue][kvalue]['star_length'])):
+                if minimum_wire_length_among_us>position_dict_for_4children_candidates[ivalue][kvalue]['star_length'][igdx]:
+                    minimum_wire_length_among_us=position_dict_for_4children_candidates[ivalue][kvalue]['star_length'][igdx]
+                
+                    where_minimum=[igdx]
+                elif minimum_wire_length_among_us==position_dict_for_4children_candidates[ivalue][kvalue]['star_length'][igdx]:
+                    where_minimum.append(igdx)
+
+            position_dict_for_4children_candidates[ivalue][kvalue].update({'minimum_wire_length':minimum_wire_length_among_us,'where_is_minimum':where_minimum})
+
+        for kvalue in position_dict_for_4children_candidates[ivalue]:
+            if max_minimum_wire_length<position_dict_for_4children_candidates[ivalue][kvalue]['minimum_wire_length']:
+                max_minimum_wire_length=position_dict_for_4children_candidates[ivalue][kvalue]['minimum_wire_length']
+                whohas_max_minimum_12OUTPUT=kvalue
+                whohas_max_minimum_10OUTPUT=ivalue
+
+
+    max_info=dict()
+    for ivalue in position_dict_for_5children_candidates:
+        if ivalue==whohas_max_minimum_10OUTPUT:
+            max_info=position_dict_for_5children_candidates[ivalue][whohas_max_minimum_12OUTPUT]
+            break
+
+    for ivalue in position_dict_for_4children_candidates:
+        if ivalue==whohas_max_minimum_10OUTPUT:
+            max_info=position_dict_for_4children_candidates[ivalue][whohas_max_minimum_12OUTPUT]
+            
+            break
+
+    new_5_candidate=dict()
+    new_4_candidate=dict()
+    ttt=int()
+    for ivalue in position_dict_for_4children_candidates:
+        targets=list()
+        ttt=ttt+1
+        for kvalue in position_dict_for_4children_candidates[ivalue]:
+            targets=position_dict_for_4children_candidates[ivalue][kvalue]['target_position']
+            break
+
+        new_position=list()
+        x_pos=float()
+        y_pos=float()
+        for jdx in range(4):
+            x_pos=x_pos+targets[jdx][0]
+            y_pos=y_pos+targets[jdx][1]
+        new_position=[x_pos/4,y_pos/4]
+        '''if targets[0]==targets[1]:
+            print(ivalue)
+            print(kvalue)
+            print(position_dict_for_4children_candidates[ivalue][kvalue])
+            print()'''
+        '''if ttt==2:
+            new_position=get_new_position_from_elements_4(targets)
+            new_position=[(targets[1][0]+targets[0][0])/2,((targets[0][1]+targets[2][1])/2)]'''
+        
+        checking_wire_length_star=float()
+        groups=list()
+        groups.append(new_position)
+        for jdx in range(4):
+            groups.append(targets[jdx])
+        checking_wire_length_star=get_new_wirelength_star(groups)
+        
+        '''if ttt==2:
+            print(checking_wire_length_star)
+            print('#############################')
+            for kvalue in position_dict_for_4children_candidates[ivalue]:
+                print(position_dict_for_4children_candidates[ivalue][kvalue]['minimum_wire_length'])
+            print(targets)
+            print(new_position)
+            print()'''
+
+
+    return 0
+
+
+
+
+
+
+def get_new_position_from_elements_4(elements):
+    target1=elements[0]
+    target2=elements[1]
+    target3=elements[2]
+    target4=elements[3]
+    new_group=list()
+
+    if target1==target2 and target2==target3 and target3==target4:
+        new_group=[{'minimum_wire_length':0},\
+            [[str(target1),str(target1)],[str(target1),str(target1)],'dot']]
+
+    elif target1==target2 or target3==target4:
+        if target1[0]==target3[0]:
+            new_group=[{'minimum_wire_length':max(target1[1],target3[1])-min(target1[1],target3[1])},\
+            [[str(target1[0]),str(min(target1[1],target3[1]))],[str(target1[0]),str(max(target1[1],target3[1]))],'vertical_line']]
+
+        elif target1[1]==target3[1]:
+            new_group=[{'minimum_wire_length':max(target1[0],target3[0])-min(target1[0],target3[0])},\
+            [[str(min(target1[0],target3[0])),str(target1[1])],[str(max(target1[0],target3[0])),str(target1[1])],'horizontal_line']]
+
+        else:
+            midpoint=[(max(target1[0],target3[0])+min(target1[0],target3[0]))/2,(max(target1[1],target3[1])+min(target1[1],target3[1]))/2]
+            if (target1[0]<target3[0] and target1[1]<target3[1]) or (target3[0]<target1[0] and target3[1]<target1[1]):
+                if (midpoint[0]-min(target1[0],target3[0]))>=(max(target1[1],target3[1])-midpoint[1]):
+                    minimum_distance=max(target1[1],target3[1])-midpoint[1]
+                    new_group=[{'minimum_wire_length':max(target1[0],target3[0])-min(target1[0],target3[0])+max(target1[1],target3[1])-min(target1[1],target3[1])},\
+                    [[str(midpoint[0]-minimum_distance),str(midpoint[1]+minimum_distance)],[str(midpoint[0]+minimum_distance),str(midpoint[1]-minimum_distance)],'negative_diagonal_line']]
+
+                else:
+                    minimum_distance=max(target1[0],target3[0])-midpoint[0]
+                    new_group=[{'minimum_wire_length':max(target1[0],target3[0])-min(target1[0],target3[0])+max(target1[1],target3[1])-min(target1[1],target3[1])},\
+                    [[str(midpoint[0]-minimum_distance),str(midpoint[1]+minimum_distance)],[str(midpoint[0]+minimum_distance),str(midpoint[1]-minimum_distance)],'negative_diagonal_line']]
+    
+            
+                
+    return 0
+
+
+
+
+
+
+
+
+
+def get_point_for_midpoint(two_points):
+    point1=two_points[0]
+    point2=two_points[1]
+    new_position=list()
+
+    if point1[0]==point2[0]:
+        new_position=[point1[0],(point1[1]+point2[1])/2]
+
+    elif point1[1]==point2[1]:
+        new_position=[(point1[0]+point2[0])/2,point1[0]]
+
+
+
+    else:
+        min_x=min(point2[0],point1[0])
+        max_x=max(point2[0],point1[0])
+        min_y=min(point2[1],point1[1])
+        max_y=max(point2[1],point1[1])
+
+        cvalue=((max_x-min_x)+(max_y-min_y))/2
+        if (point1[0]<point2[0] and point1[1]<point2[1]) or (point2[0]<point1[0] and point2[1]<point1[1]):
+            if (max_x-min_x)<(max_y-min_y):
+                new_position=[min_x,min_y+cvalue]
+            else:
+                new_position=[max_x-cvalue,max_y]
+        else:
+            if (max_x-min_x)<(max_y-min_y):
+                new_position=[min_x,max_y-cvalue]
+            else:
+                new_position=[min_x+cvalue,max_y]
+
+    return new_position
+
+
+
+
+
+
+def get_new_position_from_max_stage(major_position,position1,position2):
+    temp_position=list()
+    if position1==position2:
+        minor_position2=[str(position1[0])+' -x',position1[1]]
+        minor_position3=[str(position1[0])+' +x',position1[1]]
+        minor_position1=[position1[0],str(position1[1])+' -y']
+        temp_position=[position1[0],str(position1[1])+' +y']
+
+        return [minor_position1,minor_position2,minor_position3,temp_position]
+
+
+    else:
+        if position1[0]==position2[0]:
+            minor_position1=[str(position1[0])+' +x',major_position[1]]
+            temp_position=[str(position1[0])+' -x',major_position[1]]
+            return [minor_position1,[],[],temp_position]
+
+        
+        elif position1[1]==position2[1]:
+
+            minor_position1=[major_position[0],str(position1[1])+' +y']
+            temp_position=[major_position[0],str(position1[1])+' -y']
+            return [minor_position1,[],[],temp_position]
+        
+
+        else:
+            if major_position[0]>min(position1[0],position2[0]) and major_position[0]<max(position1[0],position2[0]):
+
+
+                x_coord=max(position1[0],position2[0])-(major_position[0]-min(position1[0],position2[0]))
+
+                if major_position[1]>=max(position1[1],position2[1]):
+                    y_coord=str(min(position1[1],position2[1]))+' -y'
+                    minor_position1=[x_coord,y_coord]
+                    temp_position=[major_position[0],str(major_position[1])+' +y']
+                    return [minor_position1,[],[],temp_position]
+
+                else:
+                    y_coord=str(max(position1[1],position2[1]))+' +y'
+                    minor_position1=[x_coord,y_coord]
+                    temp_position=[major_position[0],str(major_position[1])+' -y']
+                    return [minor_position1,[],[],temp_position]
+            
+            else:
+                y_coord=max(position1[1],position2[1])-(major_position[1]-min(position1[1],position2[1]))
+
+                if major_position[0]>=max(position1[0],position2[0]):
+                    x_coord=str(min(position1[0],position2[0]))+' -x'
+                    minor_position1=[x_coord,y_coord]
+                    temp_position=[str(major_position[0])+' -x',major_position[1]]
+                    return [minor_position1,[],[],temp_position]
+                
+                else:
+                    x_coord=str(max(position1[0],position2[0]))+' -x'
+                    minor_position1=[x_coord,y_coord]
+                    temp_position=[str(major_position[0])+' +x',major_position[1]]
+                    return [minor_position1,[],[],temp_position]
+
+
+
+
+
+def get_type_of_CK_max_minus_one(All,die_area,temp_macro):
+    
+    max_stage=int()
+
+    for ivalue in All:
+        if All[ivalue]['stage'][0]>max_stage:
+            max_stage=All[ivalue]['stage'][0]
+
+
+    list_2=list()
+    list_3=list()
+    for ivalue in All:
+        if All[ivalue]['stage'][0]==max_stage-1 and All[ivalue]['direction']=='OUTPUT':
+            if len(All[ivalue]['to'])==2:
+                list_3.append(ivalue)
+            else:
+                list_2.append(ivalue)
+
+    checking_inintial_wire_length=dict()
+    max_wire_length=float()
+    for ivalue in list_3:
+        if len(All[All[All[ivalue]['to'][0]]['to'][0]]['to'])==1:
+            first_12OUTPUT=All[All[ivalue]['to'][0]]['to'][0]
+            second_12OUTPUT=All[All[ivalue]['to'][1]]['to'][0]
+        else:
+            first_12OUTPUT=All[All[ivalue]['to'][1]]['to'][0]
+            second_12OUTPUT=All[All[ivalue]['to'][0]]['to'][0]
+        
+        target_list=list()
+        target_list.append(All[All[first_12OUTPUT]['to'][0]]['position'])
+        target_list.append(All[All[second_12OUTPUT]['to'][0]]['position'])
+        target_list.append(All[All[second_12OUTPUT]['to'][1]]['position'])
+        
+        new_position_with_minimum_length=get_minimum_length_and_candidate_3(target_list)
+        new_position=new_position_with_minimum_length[0]
+        minimum_wire_length=new_position_with_minimum_length[1]
+        checking_inintial_wire_length.update({ivalue:{'new_position':new_position,'wire_length':minimum_wire_length,'type':'group3','targets':target_list}})
+        if max_wire_length<minimum_wire_length:
+            max_wire_length=minimum_wire_length
+
+    for ivalue in list_2:
+        INPUT11=All[ivalue]['to'][0]
+        OUTPUT12=All[INPUT11]['to'][0]
+
+        first_12INPUT=All[OUTPUT12]['to'][0]
+        second_12INPUT=All[OUTPUT12]['to'][1]
+
+        target_list=list()
+        target_list.append(All[first_12INPUT]['position'])
+        target_list.append(All[second_12INPUT]['position'])
+        new_position_with_minimum_length=get_minimum_length_and_candidate_2(target_list)
+        new_position=new_position_with_minimum_length[0]
+        minimum_wire_length=new_position_with_minimum_length[1]
+        checking_inintial_wire_length.update({ivalue:{'new_position':new_position,'wire_length':minimum_wire_length,'type':'group2','target':target_list}})
+        if max_wire_length<minimum_wire_length:
+            max_wire_length=minimum_wire_length
+
+    for ivalue in checking_inintial_wire_length:
+        temp_lines=list()
+        if checking_inintial_wire_length[ivalue]['wire_length']!=max_wire_length:
+
+            checking_inintial_wire_length[ivalue].update({'debt':max_wire_length-checking_inintial_wire_length[ivalue]['wire_length']})
+            temp_lines=get_pay_off(checking_inintial_wire_length[ivalue])
+
+        else:
+            continue
+            print(ivalue)
+            print(checking_inintial_wire_length[ivalue])
+            print()
+    return 0
+
+
+
+def get_pay_off(info):
+    temp_lines=list()
+
+    debt=info['debt']
+
+    if info['type']=='group2':
+        
+        if info['new_position'][-1]=='dot':
+            new_position=info['new_position'][0]
+            
+            temp_lines.append([new_position[0]-debt/2,new_position[1]])
+            temp_lines.append([new_position[0],new_position[1]-debt/2])
+            temp_lines.append([new_position[0]+debt/2,new_position[1]])
+            temp_lines.append([new_position[0],new_position[1]+debt/2])
+
+
+        elif info['new_position'][-1]=='horizontal_line':
+            position1=list()
+            position2=list()
+            if info['new_position'][0][0]<info['new_position'][1][0]:
+                position1=info['new_position'][0]
+                position2=info['new_position'][1]
+            else:
+                position1=info['new_position'][1]
+                position2=info['new_position'][0]
+
+            mid_position=[(position1[0]+position2[0])/2,position1[1]]
+            temp_lines.append([position1[0]-debt/2,position1[1]])
+            temp_lines.append([mid_position[0],position1[1]-debt/2])
+            temp_lines.append([position2[0]+debt/2,position1[1]])
+            temp_lines.append([mid_position[0],position1[1]+debt/2])
+
+        elif info['new_position'][-1]=='vertical_line':
+            position1=list()
+            position2=list()
+            if info['new_position'][0][1]<info['new_position'][1][1]:
+                position1=info['new_position'][0]
+                position2=info['new_position'][1]
+            else:
+                position1=info['new_position'][1]
+                position2=info['new_position'][0]
+
+            mid_position=[position1[0],(position1[1]+position2[1])/2]
+
+            temp_lines.append([position1[0]-debt/2,mid_position[1]])
+            temp_lines.append([position1[0],position1[1]-debt/2])
+            temp_lines.append([position1[0]+debt/2,mid_position[1]])
+            temp_lines.append([position1[0],position2[1]+debt/2])
+
+
+        else:
+            position1=[min(info['new_position'][0][0],info['new_position'][1][0]),min(info['new_position'][0][1],info['new_position'][1][1])]
+            position2=[min(info['new_position'][0][0],info['new_position'][1][0]),max(info['new_position'][0][1],info['new_position'][1][1])]
+            position3=[max(info['new_position'][0][0],info['new_position'][1][0]),min(info['new_position'][0][1],info['new_position'][1][1])]
+            position4=[max(info['new_position'][0][0],info['new_position'][1][0]),max(info['new_position'][0][1],info['new_position'][1][1])]
+
+            temp_lines.append([position1[0]-debt/2,position1[1]])
+            temp_lines.append([position1[0],position1[1]-debt/2])
+            temp_lines.append([position2[0]-debt/2,position2[1]])
+            temp_lines.append([position2[0],position2[1]+debt/2])
+            temp_lines.append([position3[0]+debt/2,position3[1]])
+            temp_lines.append([position3[0],position3[1]-debt/2])
+            temp_lines.append([position4[0]+debt/2,position4[1]])
+            temp_lines.append([position4[0],position4[1]+debt/2])
+    
+    else:
+        target1=info['targets'][0]
+        target2=info['targets'][1]
+        target3=info['targets'][2]
+
+        if target1==target2 and target3==target1:
+            position=target1
+            temp_lines.append([position[0]-debt/3,position[1]])
+            temp_lines.append([position[0],position[1]-debt/3])
+            temp_lines.append([position[0]+debt/3,position[1]])
+            temp_lines.append([position[0],position[1]+debt/3])
+
+        elif target3==target2:
+            if target1[0]==target2[0]:
+                if target1[1]>target2[1]:
+                    temp_lines.append([target2[0]-debt/3,target2[1]])
+                    temp_lines.append([target2[0],target2[1]-debt/3])
+                    temp_lines.append([target2[0]+debt/3,target2[1]])
+
+                    if (target1[1]-target2[1])>debt:
+                        temp_lines.append([target2[0],target2[1]+debt])
+                    
+                    else:
+                        debt=debt-(target1[1]-target2[1])
+                        temp_lines.append([target2[0]+debt/3,target1[1]])
+                        temp_lines.append([target2[0],target1[1]+debt/3])
+                        temp_lines.append([target2[0]-debt/3,target1[1]])
+
+                else:
+                    temp_lines.append([target2[0]-debt/3,target2[1]])
+                    temp_lines.append([target2[0],target2[1]+debt/3])
+                    temp_lines.append([target2[0]+debt/3,target2[1]])
+
+                    if (target2[1]-target1[1])>debt:
+                        temp_lines.append([target2[0],target2[1]-debt])
+
+                    else:
+                        debt=debt-(target2[1]-target1[1])
+                        temp_lines.append([target2[0]+debt/3,target1[1]])
+                        temp_lines.append([target2[0],target1[1]-debt/3])
+                        temp_lines.append([target2[0]-debt/3,target1[1]])
+
+
+            elif target1[1]==target2[1]:
+                if target1[0]>target2[0]:
+                    temp_lines.append([target2[0],target2[1]+debt/3])
+                    temp_lines.append([target2[0]-debt/3,target2[1]])
+                    temp_lines.append([target2[0],target2[1]-debt/3])
+
+                    if (target1[0]-target2[0])>debt:
+                        temp_lines.append([target2[0]+debt,target2[1]])
+                    
+                    else:
+                        debt=debt-(target1[0]-target2[0])
+                        temp_lines.append([target1[0],target1[1]-debt/3])
+                        temp_lines.append([target1[0]+debt/3,target1[1]])
+                        temp_lines.append([target1[0],target1[1]+debt/3])
+                else:
+                    temp_lines.append([target2[0],target2[1]+debt/3])
+                    temp_lines.append([target2[0]+debt/3,target2[1]])
+                    temp_lines.append([target2[0],target2[1]-debt/3])
+                
+                    if (target2[0]-target1[0])>debt:
+                        temp_lines.append([target2[0]-debt,target2[1]])
+                    
+                    else:
+                        debt=debt-(target2[0]-target1[0])
+                        temp_lines.append([target1[0],target2[1]-debt/3])
+                        temp_lines.append([target1[0]-debt/3,target2[1]])
+                        temp_lines.append([target1[0],target2[1]+debt/3])
+
+
+            else:
+
+                if target2[0]<target1[0] and target2[1]<target1[1]:
+
+                    temp_lines.append([target2[0]-debt/3,target2[1]])
+                    temp_lines.append([target2[0],target2[1]-debt/3])
+
+                    if (target1[1]-target2[1])>debt:
+                        temp_lines.append([target2[0],target2[1]+debt])
+                    else:
+                        temp1_debt=copy.deepcopy(debt)
+                        temp1_debt=temp1_debt-(target1[1]-target2[1])
+
+                        temp_lines.append([target2[0]-temp1_debt/3,target1[1]])
+                        temp_lines.append([target2[0],target1[1]+temp1_debt/3])
+
+                        if (target1[0]-target2[0])>temp1_debt:
+                            temp_lines.append([target2[0]+temp1_debt,target1[1]])
+                        else:
+                            temp1_debt=temp1_debt-(target1[0]-target2[0])
+                            temp_lines.append([target1[0],target1[1]+temp1_debt/3])
+
+                    temptemp=list()
+
+                    if (target1[0]-target2[0])>debt:
+                        temptemp.append([target2[0]+debt,target2[1]])
+                    else:
+                        temp2_debt=copy.deepcopy(debt)
+                        temp2_debt=temp2_debt-(target1[0]-target2[0])
+
+                        temptemp.append([target1[0],target2[1]-temp2_debt/3])
+                        temptemp.append([target1[0]+temp2_debt/3,target2[1]])
+
+                        if (target1[0]-target2[0])>temp2_debt:
+                            temptemp.append([target1[0],target2[1]+temp2_debt])
+                        
+                        else:
+                            temp2_debt=temp2_debt-(target1[1]-target2[1])
+                            temptemp.append([target1[0]+temp2_debt/3,target1[1]])
+
+                    temptemp.reverse()
+                    for igdxigdx in range(len(temptemp)):
+                        temp_lines.append(temptemp[igdxigdx])
+
+                elif target2[0]<target1[0] and target2[1]>target1[1]:
+
+                    temp_lines.append([target2[0]-debt/3,target2[1]])
+                    temp_lines.append([target2[0],target2[1]+debt/3])
+
+                    if (target2[1]-target1[1])>debt:
+                        temp_lines.append([target2[0],target2[1]-debt])
+
+                    else:
+                        temp1_debt=copy.deepcopy(debt)
+                        temp1_debt=temp1_debt-(target2[1]-target1[1])
+
+                        temp_lines.append([target2[0]-temp1_debt/3,target1[1]])
+                        temp_lines.append([target2[0],target1[1]-temp1_debt/3])
+
+                        if (target1[0]-target2[0])>temp1_debt:
+                            temp_lines.append([target2[0]+temp1_debt,target1[1]])
+                        
+                        else:
+                            temp1_debt=temp1_debt-(target1[0]-target2[0])
+                            temp_lines.append([target1[0],target1[1]-temp1_debt/3])
+
+                    temptemp=list()
+
+                    if (target1[0]-target2[0])>debt:
+                        temptemp.append([target2[0]+debt,target2[1]])
+                    
+                    else:
+                        temp2_debt=copy.deepcopy(debt)
+                        temp2_debt=temp2_debt-(target1[0]-target2[0])
+
+                        temptemp.append([target1[0],target2[1]+temp2_debt/3])
+                        temptemp.append([target1[0]+temp2_debt/3,target2[1]])
+
+                        if (target1[0]-target2[0])>temp2_debt:
+                            temptemp.append([target1[0],target2[1]-temp2_debt])
+                        
+                        else:
+                            temp2_debt=temp2_debt-(target2[1]-target1[1])
+                            temptemp.append([target1[0]+temp2_debt/3,target1[1]])
+
+                    temptemp.reverse()
+                    for igdxigdx in range(len(temptemp)):
+                        temp_lines.append(temptemp[igdxigdx])
+                
+                elif target2[1]<target1[1]:
+                    temp_lines.append([target2[0]+debt/3,target2[1]])
+                    temp_lines.append([target2[0],target2[1]-debt/3])
+
+                    if (target1[1]-target2[1])>debt:
+                        temp_lines.append([target2[0],target2[1]+debt])
+                    
+                    else:
+                        temp1_debt=copy.deepcopy(debt)
+                        temp1_debt=temp1_debt-(target1[1]-target2[1])
+
+                        temp_lines.append([target2[0]+temp1_debt/3,target1[1]])
+                        temp_lines.append([target2[0],target1[1]+temp1_debt/3])
+                    
+                        if (target2[0]-target1[0])>temp1_debt:
+                            temp_lines.append([target2[0]-temp1_debt,target1[1]])
+                        
+                        else:
+                            temp1_debt=temp1_debt-(target2[0]-target1[0])
+                            temp_lines.append([target1[0],target1[1]+temp1_debt/3])
+                    
+                    temptemp=list()
+
+                    if (target2[0]-target1[0])>debt:
+                        temptemp.append([target2[0]-debt,target2[1]])
+                    
+                    else:
+                        temp2_debt=copy.deepcopy(debt)
+                        temp2_debt=temp2_debt-(target2[0]-target1[0])
+
+                        temptemp.append([target1[0],target2[1]-temp2_debt/3])
+                        temptemp.append([target1[0]-temp2_debt/3,target2[1]])
+
+                        if (target1[1]-target2[1])>temp2_debt:
+                            temptemp.append([target1[0],target2[1]+temp2_debt])
+                        
+                        else:
+                            temp2_debt=temp2_debt-(target1[1]-target2[1])
+                            temptemp.append([target1[0]-temp2_debt/3,target1[1]])
+
+                    temptemp.reverse()
+                    for igdxigdx in range(len(temptemp)):
+                        temp_lines.append(temptemp[igdxigdx])
+
+                else:
+                    temp_lines.append([target2[0]+debt/3,target2[1]])
+                    temp_lines.append([target2[0],target2[1]+debt/3])
+                
+                    if (target2[1]-target1[1])>debt:
+                        temp_lines.append([target2[0],target2[1]-debt])
+                    
+                    else:
+                        temp1_debt=copy.deepcopy(debt)
+                        temp1_debt=temp1_debt-(target2[1]-target1[1])
+
+                        temp_lines.append([target2[0]+temp1_debt/3,target1[1]])
+                        temp_lines.append([target2[0],target1[1]-temp1_debt/3])
+
+                        if (target2[0]-target1[0])>temp1_debt:
+                            temp_lines.append([target2[0]-temp1_debt,target1[1]])
+                        
+                        else:
+                            temp1_debt=temp1_debt-(target2[0]-target1[0])
+                            temp_lines.append([target1[0],target1[1]-temp1_debt/3])
+                    
+                    temptemp=list()
+
+                    if (target2[0]-target1[0])>debt:
+                        temptemp.append([target2[0]-debt,target2[1]])
+                    
+                    else:
+                        temp2_debt=copy.deepcopy(debt)
+                        temp2_debt=temp2_debt-(target2[0]-target1[0])
+                        temptemp.append([target1[0],target2[1]+temp2_debt/3])
+                        temptemp.append([target1[0]-temp2_debt/3,target2[1]])
+
+                        if (target2[1]-target1[1])>temp2_debt:
+                            temptemp.append([target1[0],target2[1]-temp2_debt])
+                        
+                        else:
+                            temp2_debt=temp2_debt-(target2[1]-target1[1])
+                            temptemp.append([target1[0]-temp2_debt/3,target1[1]])
+                    temptemp.reverse()
+                    for igdxigdx in range(len(temptemp)):
+                        temp_lines.append(temptemp[igdxigdx])
+################################################################################ 여기서부터
+        else:
+            if target1[0]==target2[0]==target3[0]:
+                return 0
+                print(info)
+            elif target1[0]==target2[0] or target2[0]==target3[0] or target3[0]==target1[0]:
+                return 0
+                print(info)
+            elif target1[1]==target2[1]==target3[1]:
+                return 0
+            elif target1[1]==target2[1] or target2[1]==target3[1] or target3[1]==target1[1]:
+                return 0
+                print(info)
+            else:
+                print(info)
+            return 0
+
+    return 0
+
+
+
+
+
+
+
+
+def get_minimum_length_and_candidate_2(listlist):
+    not_single_1=listlist[0]
+    not_single_2=listlist[1]
+
+    new_position=list()
+    minimum_length=float()
+    additional_lines=list()
+
+
+    if not_single_1==not_single_2:
+        new_position=[not_single_1,'dot']
+        minimum_length=0
+        additional_lines=[[str(not_single_1[0])+' +k/2',str(not_single_1[1])],\
+            ]
+    
+    elif not_single_1[1]==not_single_2[1]:
+        new_position=[not_single_1,not_single_2,'horizontal_line']
+    
+    elif not_single_1[0]==not_single_2[0]:
+        new_position=[not_single_1,not_single_2,'vertical_line']
+    
+    else:
+        new_position=[not_single_1,not_single_2,'rectangle_plane']
+
+    minimum_length=abs(not_single_1[0]-not_single_2[0])+abs(not_single_1[1]-not_single_2[1])
+
+    return [new_position,minimum_length]
+
+
+
+
+
+
+def get_minimum_length_and_candidate_3(listlist):
+    single=listlist[0]
+    not_single_1=listlist[1]
+    not_single_2=listlist[2]
+
+    new_position=list()
+    minimum_length=float()
+
+    if single==not_single_1 and not_single_1==not_single_2:
+        new_position=[single,'dot']
+        minimum_length=0
+
+    elif not_single_1==not_single_2:
+        new_position=[not_single_1,'dot']
+        minimum_length=abs(not_single_1[0]-single[0])+abs(not_single_1[1]-single[1])
+        
+    else:
+        max_x=float()
+        for gdx in range(3):
+            if max_x<listlist[gdx][0]:
+                max_x=listlist[gdx][0]
+
+        min_x=max_x
+        counts_of_max_x=int()
+        for gdx in range(3):
+            if min_x>listlist[gdx][0]:
+                min_x=listlist[gdx][0]
+            if listlist[gdx][0]==max_x:
+                counts_of_max_x=counts_of_max_x+1
+
+        mid_x=float()
+        counts_of_min_x=int()
+        for gdx in range(3):
+            if listlist[gdx][0]!=min_x and listlist[gdx][0]!=max_x:
+                mid_x=listlist[gdx][0]
+            if listlist[gdx][0]==min_x:
+                counts_of_min_x=counts_of_min_x+1
+        
+        if mid_x==float():
+            if counts_of_max_x>counts_of_min_x:
+                mid_x=max_x
+            else:
+                mid_x=min_x
+        
+        midpoint1=(mid_x+min_x)/2
+        midpoint2=(mid_x+max_x)/2
+        midpoint=(midpoint1+midpoint2)/2
+
+        abs_list=list()
+        max_abs=float()
+        for gdx in range(3):
+            abs_list.append(abs(midpoint-listlist[gdx][0]))
+            if max_abs<abs(midpoint-listlist[gdx][0]):
+                max_abs=abs(midpoint-listlist[gdx][0])
+        
+        min_abs=max_abs
+        index_of_min=int()
+        result_x=float()
+        for gdx in range(3):
+            if min_abs>abs_list[gdx]:
+                min_abs=abs_list[gdx]
+                index_of_min=gdx
+        result_x=listlist[index_of_min][0]
+        result_x_x=result_x
+
+        max_x=float()
+        for gdx in range(3):
+            if max_x<listlist[gdx][1]:
+                max_x=listlist[gdx][1]
+
+        min_x=max_x
+        counts_of_max_x=int()
+        for gdx in range(3):
+            if min_x>listlist[gdx][1]:
+                min_x=listlist[gdx][1]
+            if listlist[gdx][1]==max_x:
+                counts_of_max_x=counts_of_max_x+1
+
+        mid_x=float()
+        counts_of_min_x=int()
+        for gdx in range(3):
+            if listlist[gdx][1]!=min_x and listlist[gdx][1]!=max_x:
+                mid_x=listlist[gdx][1]
+            if listlist[gdx][1]==min_x:
+                counts_of_min_x=counts_of_min_x+1
+        
+        if mid_x==float():
+            if counts_of_max_x>counts_of_min_x:
+                mid_x=max_x
+            else:
+                mid_x=min_x
+        
+        midpoint1=(mid_x+min_x)/2
+        midpoint2=(mid_x+max_x)/2
+        midpoint=(midpoint1+midpoint2)/2
+
+        abs_list=list()
+        max_abs=float()
+        for gdx in range(3):
+            abs_list.append(abs(midpoint-listlist[gdx][1]))
+            if max_abs<abs(midpoint-listlist[gdx][1]):
+                max_abs=abs(midpoint-listlist[gdx][1])
+        
+        min_abs=max_abs
+        index_of_min=int()
+        result_x=float()
+        for gdx in range(3):
+            if min_abs>abs_list[gdx]:
+                min_abs=abs_list[gdx]
+                index_of_min=gdx
+        result_x=listlist[index_of_min][1]
+        result_y=result_x
+        new_position=[[result_x_x,result_y],'dot']
+
+        checkinglist=list()
+        checkinglist.append(new_position[0])
+        for gdx in range(3):
+            checkinglist.append(listlist[gdx])
+        minimum_length=get_new_wirelength_star(checkinglist)
+
+    return [new_position,minimum_length]
+get_new_wirelength_star
+
+
+
+
 
 
 
@@ -2401,7 +3519,8 @@ if __name__ == "__main__":
     del netinfo_for_clk['def_unit_should_divide_distance']
     die_area=netinfo_for_clk['def_die_area']
     del netinfo_for_clk['def_die_area']
-
+    die_area[0]=die_area[0][0]/def_unit,die_area[0][1]/def_unit
+    die_area[1]=die_area[1][0]/def_unit,die_area[1][1]/def_unit
 
 
 
@@ -2459,103 +3578,25 @@ if __name__ == "__main__":
 
 
 
-    
+    temp_macro='CLKBUF_X1'
     if wire_mode=='wire_load':
-        file_pathpath='../data/deflef_to_graph_and_verilog/results/test_7800_zfor_clk_wire_load_scratch/scratch_detailed.json'
-        with open (file_pathpath,'r') as ff:
-            clk_All=json.load(ff)
-        file_pathpath='../data/deflef_to_graph_and_verilog/results/test_7800_without_clk_wire_load_scratch/scratch_detailed.json'
-        with open (file_pathpath,'r') as ff:
-            delay_without_clk_All=json.load(ff)
+        file_pathtt='../data/deflef_to_graph_and_verilog/results/test_7800_wire_load_scratch_CTS/scratch_detailed.json'
+        with open(file_pathtt,'r') as f:
+            CTS_info=json.load(f)
 
     else:
-        file_pathpath='../data/deflef_to_graph_and_verilog/results/'+file_address_name+'/test_7800_without_clk_'+wire_mode+'/'+file_name.split('_revised')[0]+'.json'
-        list_of_last_nodes=dict()
-        with open (file_pathpath,'r') as ff:
-            delay_without_clk_All=json.load(ff)
+        file_pathpath='../data/deflef_to_graph_and_verilog/results/'+file_address_name+'/test_7800_zfor_clk_'+wire_mode+'_with_skew/'+file_name.split('_revised')[0]+'.json'
+        with open(file_pathpath,'r') as f:
+            CTS_info=json.load(f)
+
+    skew=CTS_info[1]
+    clk_All_with_skew=CTS_info[0]
 
 
-        file_pathpath='../data/deflef_to_graph_and_verilog/results/'+file_address_name+'/test_7800_zfor_clk_'+wire_mode+'/'+file_name.split('_revised')[0]+'.json'
-        with open (file_pathpath,'r') as ff:
-            clk_All=json.load(ff)
-    ##list_of_startpoints_of_path=get_start_points(delay_without_clk_All,'l0973 D')
-    ##print(list_of_startpoints_of_path)
-    
-    
-    '''kk=int()
-    outnodes=list()
-    path=get_new_worst_path(delay_without_clk_All)
-    for idx,ivalue in enumerate(delay_without_clk_All):
-        if len(delay_without_clk_All[ivalue]['from'])==0 and ivalue.split(' ')[1]=='Q':
-            kk=kk+1
-            outnodes.append(ivalue)
-            print(ivalue, delay_without_clk_All[ivalue])
-    print(idx)
-    print(kk)
-    print()'''
-    ##print(outnodes)
 
+    qqq=get_type_of_CK_max_minus_one(clk_All_with_skew,die_area,temp_macro)
+    ##rrr=get_type_of_CK_max_minus_two(clk_All_with_skew,die_area,temp_macro)
 
-    clk_pos=get_clk_pin_position(clk_All,def_unit)
-    parts_clk_all=get_clk_partitioning(clk_All,die_area,def_unit)
-    ##print()
+   ##print(idxidx)
+    ##print(kdxkdx)
     ##print(sys.argv)
-    temporary_macro='CLKBUF_X1'
-    temp_buffer_tree=get_group_of_buffer(parts_clk_all,temporary_macro)
-    CTS_stage_All=get_stage_with_CTS(clk_All,temp_buffer_tree)
-    new_position_All=get_new_position_of_CTS_cells(CTS_stage_All,die_area,temporary_macro,clk_pos)
-
-    if new_position_All!='Error':
-        clk_All_with_all_cap=get_new_wire_cap(new_position_All,default_wire_load_model)
-        CLK_mode='real'
-        CTS_info=get_new_Delay_of_nodes_CLK(clk_All_with_all_cap,CLK_mode,wire_mode,liberty_type)
-        skew=CTS_info[1]
-        clk_All_with_skew=CTS_info[0]
-
-        AAAlll=copy.deepcopy(clk_All_with_skew)
-
-        
-
-        if wire_mode=='wire_load':
-            file_pathtt='../data/deflef_to_graph_and_verilog/results/test_7800_wire_load_scratch_CTS/scratch_detailed.json'
-            with open(file_pathtt,'w') as f:
-                json.dump([clk_All_with_skew,skew],f,indent=4)
-
-        else:
-            file_pathpath='../data/deflef_to_graph_and_verilog/results/'+file_address_name+'/test_7800_zfor_clk_'+wire_mode+'_with_skew/'+file_name.split('_revised')[0]+'.json'
-            with open(file_pathpath,'w') as f:
-                json.dump([clk_All_with_skew,skew],f,indent=4)
-        print('CTS_finished')
-    print(sys.argv)
-
-    '''typed_All=get_type_of_new_graph(netinfo,file_address)
-    cutting_All=get_delnode_new_list(typed_All)
-    CLK2reg_All=get_CLK2CK_new_graph(cutting_All)
-    without_clk_All=get_new_del_related_with_CLK(cutting_All,CLK2reg_All)
-    without_unconnected_All=new_del_unconnected_nodes(without_clk_All)
-    stage_All=get_new_stage_nodes(without_unconnected_All)
-    All_with_wire_cap=get_new_wire_cap(stage_All,default_wire_load_model)
-    delay_only_first_stage_without_clk_All_skew=get_new_Delay_of_nodes_stage0(All_with_wire_cap,clk_All_with_skew,wire_mode,liberty_type)
-    delay_without_clk_All_skew=get_new_all_Delay_Transition_of_nodes(delay_only_first_stage_without_clk_All_skew,wire_mode,liberty_type)
-
-    total_delay=list()
-    total_delay_info=get_last_nodes_list(delay_without_clk_All_skew)
-    for idxxx in range(len(total_delay_info)):
-        what_has_worst_delay=total_delay_info[idxxx]
-        path_worst=get_new_worst_path(delay_without_clk_All_skew,what_has_worst_delay)
-        total_delay.append(path_worst)
-
-
-    if wire_mode=='wire_load':
-        file_pathtt='../data/deflef_to_graph_and_verilog/results/test_7800_wire_load_scratch_with_skew/scratch_detailed.json'
-        with open(file_pathtt,'w') as f:
-            json.dump(total_delay,f,indent=4)
-
-    else:
-        file_pathpath='../data/deflef_to_graph_and_verilog/results/'+file_address_name+'/test_7800_'+wire_mode+'_with_skew/'+file_name.split('_revised')[0]+'.json'
-        with open(file_pathpath,'w') as f:
-            json.dump(total_delay,f,indent=4)
-
-
-    print(skew)'''
-

@@ -20,23 +20,23 @@ def get_file_and_make_directory(wiremode,file_type):
 
         if defdef=='break':
             break
-        if idx==173:
-            if wiremode=='star':
-                print()
-                print('revising')
-                print()
-                os.system('python3 0_revise_checking.py '+defdef)
-                print()
-                print('parsing')
-                print()
-                os.system('python3 1_for_check.py '+defdef)
-            print()
-            print('calculating')
-            print()
-            os.system('python3 2_for_modifying_graph.py '+defdef+' '+wiremode+' '+file_type)
 
-            print(defdef,file_type,wiremode)
+        '''if wiremode=='star':
             print()
+            print('revising')
+            print()
+            os.system('python3 0_revise_checking.py '+defdef)
+            print()
+            print('parsing')
+            print()
+            os.system('python3 1_for_check.py '+defdef)
+        print()
+        print('calculating')
+        print()'''
+        os.system('python3 CTO.py '+defdef+' '+wiremode+' '+file_type)
+
+        print(defdef,file_type,wiremode)
+        ##print()
         idx=idx+1
 
     
@@ -74,7 +74,7 @@ def copy_scratch(wirewire,defdef):
 
     file_path='../data/deflef_to_graph_and_verilog/results/'+defdef+'/test_7800_zfor_clk_'+wirewire+'_with_skew'
     file_path_a1_bank='../data/deflef_to_graph_and_verilog/results/a1_bank/test_7800_zfor_clk_'+wirewire+'_with_skew/scratch_detailed.json'
-    if 'scratch_detailed.json' not in os.listdir(file_path):
+    if 'scratch_detailed.json' not in os.listdir(file_path): 
         shutil.copyfile(file_path_a1_bank,file_path+'/scratch_detailed.json')
 
     return 0
@@ -266,28 +266,13 @@ def get_CTS(set_of_file_types,wire_mode):
 
     del start_end_list[-1]
 
-    if set_of_file_types==['a1_bank','a1_rbank','bank']:
-        for idx in range(50):
-            new_list.append(list_of_file[idx])
-        for idx in range(50):
-            new_list.append(list_of_file[idx+50])
-        for idx in range(98):
-            new_list.append(list_of_file[idx+100])
-    
-    elif set_of_file_types==['a2_bank'] or set_of_file_types==['a2_rbank']:
-        for idx in range(200):
-            new_list.append(list_of_file[idx])
 
-    elif set_of_file_types==['Random2','Random2_detailed'] or set_of_file_types==['rbank','random'] or set_of_file_types==['random3','Random'] or set_of_file_types==['Rbank','Rbank2']:
-        for idx in range(100):
-            new_list.append(list_of_file[idx])
-        for idx in range(100):
-            new_list.append(list_of_file[idx+100])
+    new_list=copy.deepcopy(list_of_file)
 
     for idx in range (len(new_list)):
         print(new_list[idx])
-        os.system('python3 CTS_RGM.py '+new_list[idx])
-        os.system('python3 making_def_with_cts_RGM.py '+new_list[idx])
+        os.system('python3 CTS.py '+new_list[idx])
+        os.system('python3 making_def_with_cts.py '+new_list[idx])
         ##print()
 
     return 0
@@ -300,13 +285,12 @@ if __name__ == "__main__":
     listlist=list()
     if_not_zero=sys.argv[1]
 
-    deflist=['bank','rbank','random','random3','Random','Random2','Random2_detailed','a1_bank','a1_rbank','a2_bank','a2_rbank','Rbank','Rbank2']
+    deflist=['Rbank','bank','rbank','random','random3','Random','Random2','Random2_detailed','a1_bank','a1_rbank','a2_bank','a2_rbank','Rbank2']
 
     ### deflist=['bank','rbank','random','random3','Random']
     ### deflist=['Random2','Random2_detailed','a1_bank','a1_rbank']
     ### deflist=['a2_bank','a2_rbank','Rbank','Rbank2']
 
-    deflist=['a2_rbank']
     ##deflist=['Rbank2']
 
     wire_mod=['star']
@@ -325,15 +309,13 @@ if __name__ == "__main__":
                 copy_scratch(wire_mod[iddx],deflist[kkiiddxx])
 
 
-    deflist=[['a1_bank','a1_rbank','bank']]
 
-    deflist=[['a2_bank']]
-    deflist=[['a2_rbank']]
+    deflist=[['a2_bank','a2_rbank','Random2']]
+    ##deflist=[['a1_bank','a1_rbank','bank','rbank','random','Random2_detailed']]
+    ##deflist=[['Rbank','random3','Rbank2','Random']]
 
-    deflist=[['Random2','Random2_detailed']]
-    deflist=[['rbank','random']]
-    deflist=[['random3','Random']]
-    deflist=[['Rbank','Rbank2']]
+    ##deflist=[['random','Random','Rbank2']]
+
     if if_not_zero==str(2):
         for iddx in range(len(wire_mod)):
             for kkiiddxx in range(len(deflist)):

@@ -768,8 +768,7 @@ def get_new_all_Delay_Transition_of_nodes(delay_only_first_stage_without_clk_All
 
                     fall_delay_finals.append([fall_delay_candidate[tdx][0],fall_delay_candidate[tdx][1][2]+get_value_from_table(df5_delay,input_ttrraann,load_capa),get_value_from_table(df5_trans,input_ttrraann,load_capa),unate])
                     
-                    '''if kvalue =='g0288 ZN':
-                        print(kvalue, fall_delay_candidate[tdx][1][2],get_value_from_table(df5_delay,input_ttrraann,load_capa),df5_delay,input_ttrraann,load_capa)'''
+
 
                 rise_delay_finals=list()
                 for tdx in range(len(rise_delay_candidate)):
