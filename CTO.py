@@ -3054,8 +3054,9 @@ def get_pay_off(info):
             temp_lines.append([position[0]+debt/3,position[1]])
             temp_lines.append([position[0],position[1]+debt/3])
 
-        elif target3==target2:
-            if target1[0]==target2[0]:
+        elif target3==target2 or 직사각형의 경우
+            해당경우 타겟3과 타겟2가 같은 경우와, 직각삼각형의 경우의 target을 잘 잡아야된다.
+            if target1[0]==target2[0] and target3==target2:
                 if target1[1]>target2[1]:
                     temp_lines.append([target2[0]-debt/3,target2[1]])
                     temp_lines.append([target2[0],target2[1]-debt/3])
@@ -3085,7 +3086,7 @@ def get_pay_off(info):
                         temp_lines.append([target2[0]-debt/3,target1[1]])
 
 
-            elif target1[1]==target2[1]:
+            elif target1[1]==target2[1] and target3==target2:
                 if target1[0]>target2[0]:
                     temp_lines.append([target2[0],target2[1]+debt/3])
                     temp_lines.append([target2[0]-debt/3,target2[1]])
@@ -3115,6 +3116,9 @@ def get_pay_off(info):
 
 
             else:
+
+                target4=list()
+                target5=list()
 
                 if target2[0]<target1[0] and target2[1]<target1[1]:
 
@@ -3288,7 +3292,7 @@ def get_pay_off(info):
                     temptemp.reverse()
                     for igdxigdx in range(len(temptemp)):
                         temp_lines.append(temptemp[igdxigdx])
-################################################################################ 여기서부터
+            ################################################################################ 여기서부터
         else:
             if target1[0]==target2[0]==target3[0]:
                 return 0
@@ -3296,16 +3300,18 @@ def get_pay_off(info):
             elif target1[0]==target2[0] or target2[0]==target3[0] or target3[0]==target1[0]:
                 return 0
                 print(info)
+                #############특수한 경우(직각 삼각형: elif target3==target2(직사각형) 인 경우와 매우 비슷하다.)
             elif target1[1]==target2[1]==target3[1]:
                 return 0
             elif target1[1]==target2[1] or target2[1]==target3[1] or target3[1]==target1[1]:
                 return 0
                 print(info)
             else:
+                return 0
                 print(info)
-            return 0
 
     return 0
+
 
 
 
