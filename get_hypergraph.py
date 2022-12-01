@@ -141,8 +141,19 @@ def get_each_cell(file,libAdrress):
         else:
             new_cell_dict[nets[ivalue]['from'][0]].update({'to':nets[ivalue]['to']})
 
+    
+    for ivalue in new_cell_dict:
+        will_del_connect=list()
+        if new_cell_dict[ivalue]['type']=='cell':
+            if new_cell_dict[ivalue]['cell_type']=='MACRO' and new_cell_dict[ivalue]['direction']=='OUTPUT':
+                df_table=pd.read_csv(libAdrress+new_cell_dict[ivalue]['macroID']+'/3_output_'+ivalue.split(' ')[1]+'/0_info.tsv',sep='\t')
 
-
+                if 'unateness : complex' in list(df_table[ivalue.split(' ')[1]])[2]:
+                    will_del_connect=copy.deepcopy(new_cell_dict[ivalue]['from'])
+                    new_cell_dict[ivalue]['from']=[]
+                    for kvalue in will_del_connect:
+                        if ivalue in new_cell_dict[kvalue]['to']:
+                            new_cell_dict[kvalue]['to'].remove(ivalue)
 
 
     return new_cell_dict     
@@ -197,7 +208,6 @@ def get_unconnect(nets,lib):
                 else:
                     nets[ivalue]['to']=[]
 
-
     for idx in range(len(group_of_clk)):
         clk_groups.update({group_of_clk[idx]:nets[group_of_clk[idx]]})
         del nets[group_of_clk[idx]]
@@ -206,7 +216,7 @@ def get_unconnect(nets,lib):
 
 
 ################################ cycle이 있는지 확인하는 함수 필요
-def checking_input_list_new(All,dict_dict,input_one):
+'''def checking_input_list_new(All,dict_dict,input_one):
     if input_one in dict_dict:
         print()
         print('비상비상비상_______사이클_존재_______비상비상비상')
@@ -281,7 +291,7 @@ def checking_input_list_new(All,dict_dict,input_one):
             for idx in range(len(remain_list)):
                 dict_dict=checking_input_list_new(All,dict_dict,remain_list[idx])
 
-    return dict_dict
+    return dict_dict'''
 ################################ cycle이 있는지 확인하는 함수 필요
 
 
@@ -306,6 +316,7 @@ def get_new_stage_nodes(TAll):
     while True:
         rrr=int()
         willget_stage_input=list()
+        
 
         for ivalue in All:
             if All[ivalue]['stage']==[None,None]:
@@ -330,7 +341,6 @@ def get_new_stage_nodes(TAll):
         for idx in range(len(willget_stage_input)):
                 All[willget_stage_input[idx]]['stage']=[current_stage,'INPUT']
 
-
         if rrr==0:
             break
 
@@ -353,8 +363,7 @@ if __name__ == "__main__":
 
     directory_name=where_the_verilog.split('/')[-1].split('.v')[0]+'_'+sys.argv[2].split('.lib')[0]
 
-    if directory_name not in os.listdir(where_the_hypergraph):
-        os.mkdir(where_the_hypergraph+directory_name)
+
     file_save_address_stage_without_clk=where_the_hypergraph+directory_name+'/stage_without_clk.pickle'
     file_save_address_stage_with_clk=where_the_hypergraph+directory_name+'/stage_with_clk.pickle'
 
@@ -362,11 +371,16 @@ if __name__ == "__main__":
     unconnect_graph=list()
 
     start = time.time()
-    
+    print('start')
     net_info=get_each_cell(where_the_verilog,where_the_lib)
+    print('net_info_end')
     unconnect_graph=get_unconnect(net_info,where_the_lib)
+    print('unconnect_graph_end')
     stage_without_clk=get_new_stage_nodes(unconnect_graph[1])
     stage_with_clk=get_new_stage_nodes(unconnect_graph[0])
+
+    if directory_name not in os.listdir(where_the_hypergraph):
+        os.mkdir(where_the_hypergraph+directory_name)
 
     with open(file_save_address_stage_without_clk,'wb') as fw:
         pickle.dump(stage_without_clk, fw)

@@ -6,15 +6,23 @@ import numpy as np
 import sys
 import shutil
 import re
+import pickle
+import pandas as pd
 
 
 def Get_info_lef(fileAddress):
     file = open(fileAddress, 'r')
     macroInfo = dict()
+    data_unit=None
     macroID = None
+
     for idx, line in enumerate(file):
         line = line.strip()
-        
+
+        if line.startswith("DATABASE MICRONS"):
+            pp=re.sub(r'[^0-9]','',line)
+            data_unit=int(pp)
+
         if line.startswith("MACRO"):
             macroID = line.replace("MACRO", "").replace("\n", "").strip()
             macroInfo.update({macroID:{}})
@@ -24,6 +32,11 @@ def Get_info_lef(fileAddress):
                 endIdx = idx
                 macroInfo[macroID].update({'idx_range':[startIdx, endIdx]})
     file.close()
+
+    if data_unit==None:
+        print('Error : lef_data_unit doesn\'t exist')
+        return 'Error : lef_data_unit doesn\'t exist : '+str(data_unit)
+
     for macroID in macroInfo:
         startIdx = macroInfo[macroID]["idx_range"][0]
         endIdx = macroInfo[macroID]["idx_range"][1]
@@ -50,46 +63,877 @@ def Get_info_lef(fileAddress):
             del macroInfo[macroID]['idx_range']
         file.close()
 
-    for ivalue in macroInfo:
-        for kvalue in macroInfo[ivalue]:
-            macroInfo[ivalue][kvalue]=macroInfo[ivalue][kvalue][0]
-
-
-    data_unit=None
-    file = open(fileAddress, 'r')
-
-    for idx, line in enumerate(file):
-        line = line.strip()
-        if line.startswith("DATABASE MICRONS"):
-            pp=re.sub(r'[^0-9]','',line)
-            data_unit=int(pp)
-            break
-
-    if data_unit==None:
-        print('Error : lef_data_unit doesn\'t exist')
-        return 'Error : lef_data_unit doesn\'t exist : '+str(data_unit)
-
+    
     return [macroInfo,data_unit]
 
 
 
+def Get_info_def(fileAddress):
+    range_macro=list()
+    area_line=str()
+    data_unit=None
+
+
+    file = open(fileAddress)
+    cellInfo = dict()
+    for idx, line in enumerate(file):
+        line = line.strip()
+
+        if line.startswith("DIEAREA"):                                   
+            area_line=line
+
+        elif line.startswith("UNITS DISTANCE MICRONS"):
+            pp=re.sub(r'[^0-9]','',line)
+            data_unit=int(pp)
+
+        elif line.startswith("COMPONENTS"):
+            startc_idx = idx+1
+        elif line.startswith("END COMPONENTS"):
+            endc_idx = idx-1
+
+        elif line.startswith("PINS"):
+            startpIdx = idx+1
+
+        elif line.startswith("END PINS"):
+            endpIdx = idx-1
+
+    file.close()
+
+    if data_unit==None:
+        print('Error : def_data_unit doesn\'t exist')
+        return 'Error : def_data_unit doesn\'t exist : '+str(data_unit)
+        
+    range_macro.append(area_line.split(") (")[0].split('( ')[1].strip().split(' '))
+    range_macro.append(area_line.split(") (")[1].split(' )')[0].strip().split(' '))
+
+    for idx in range(len(range_macro)):
+        for kdx in range(len(range_macro[idx])):
+            range_macro[idx][kdx]=float(range_macro[idx][kdx])
+
+
+    all_lines_pin=list()
+    all_lines=list()
+
+    file = open(fileAddress)
+    for idx, line in enumerate(file):
+        line=line.replace('\n','').strip()
+        if idx >= startc_idx and idx <= endc_idx:
+            if line.startswith("-"):
+                all_lines.append(line)
+            else:
+                all_lines[-1]=all_lines[-1]+' '+line
+
+        elif idx >=startpIdx and idx <= endpIdx:
+            if line.startswith("-"):
+                all_lines_pin.append(line)
+            else:
+                all_lines_pin[-1]=all_lines_pin[-1]+' '+line
+    
+    vdd_int=int()
+    vss_int=int()
+    vdd_is=int()
+    vss_is=int()
+    checking_pin_list=copy.deepcopy(all_lines_pin)
+    for idx in range(len(checking_pin_list)):
+        if '- VDD' in all_lines_pin[idx]:
+            vdd_is=1
+            vdd_int=idx
+
+        if '- VSS' in all_lines_pin[idx]:
+            vss_is=1
+            vss_int=idx
+
+    if vdd_is==1:
+        del all_lines_pin[vdd_int]
+    if vss_is==1:
+        del all_lines_pin[vss_int]
+
+
+    cellInfo=dict()
+    for kdx in range(len(all_lines)):
+        info_list=all_lines[kdx].split(' ')
+
+        cell_name=info_list[1]
+        macro_id=info_list[2]
+        position=[info_list[6],info_list[7]]
+        orientation=info_list[9]
+        cellInfo.update({cell_name:{'macroID':macro_id,'position':position,'orientation':orientation}})
+
+    pinInfo=dict()
+    for kdx in range(len(all_lines_pin)):
+        info_list_pin=all_lines_pin[kdx].split(' ')
+
+        layer_idx=int()
+        direction_idx=int()
+        position_idx=int()
+
+        for jdx in range(len(info_list_pin)):
+            if 'LAYER' in info_list_pin[jdx]:
+                layer_idx=jdx
+            elif 'DIRECTION' in info_list_pin[jdx]:
+                direction_idx=jdx
+            elif 'FIXED' in info_list_pin[jdx] or 'PLACED' in info_list_pin[jdx]:
+                position_idx=jdx
+        
+        layer_list=info_list_pin[layer_idx:]
+        direction_list=info_list_pin[direction_idx:]
+        position_list=info_list_pin[position_idx:]
+
+
+        pin_name=info_list_pin[1]
+        layer_info=layer_list[1]
+        direction='external_pin_'+direction_list[1]
+        position=[position_list[2],position_list[3]]
+
+        pinInfo.update({pin_name:{'position':position,'layer':layer_info,'direction':direction}})
+    
+    total_info=dict()
+    total_info.update(cellInfo)
+    total_info.update(pinInfo)
+    range_macro[0][0]=float(float(range_macro[0][0])/float(data_unit))
+    range_macro[0][1]=float(float(range_macro[0][1])/float(data_unit))
+    range_macro[1][0]=float(float(range_macro[1][0])/float(data_unit))
+    range_macro[1][1]=float(float(range_macro[1][1])/float(data_unit))
+    return [range_macro,total_info,data_unit]
 
 
 
 
 
 
-################################################################################################################################3
+def get_position_with_wire_cap(def_unit,lef_unit,cell_extpin_position,std_pin_of_cell_position,stage,wlm):
+    All=copy.deepcopy(stage)
+
+    proportion=lef_unit/def_unit
+    for ivalue in All:
+        if All[ivalue]['type']=='pin':
+            temp_pos=cell_extpin_position[ivalue]['position']
+            temp_pos[0]=float(temp_pos[0])/def_unit
+            temp_pos[1]=float(temp_pos[1])/def_unit
+            All[ivalue].update({'position':temp_pos})
+
+        else:
+            temp_pos=cell_extpin_position[ivalue.split(' ')[0]]['position']
+            temp_pin_pos=std_pin_of_cell_position[All[ivalue]['macroID']][ivalue.split(' ')[1]][0]
+            xpos=(temp_pin_pos[2]+temp_pin_pos[0])/(2*proportion) ############## 중간점/2 ####### /2를 한 이유는 lef와 def의 scailing을 맞추기 위해서
+            ypos=(temp_pin_pos[3]+temp_pin_pos[1])/(2*proportion) ############## 중간점/2 ####### /2를 한 이유는 lef와 def의 scailing을 맞추기 위해서
+            temp_port_position=[(xpos+float(temp_pos[0]))/def_unit,(ypos+float(temp_pos[1]))/def_unit]
+            All[ivalue].update({'position':temp_port_position})
+
+
+    for ivalue in All:
+        if All[ivalue]['direction']=='OUTPUT':
+            position_list=list()
+            All[ivalue].update({'wire_length_hpwl':float(0)})
+            All[ivalue].update({'wire_length_clique':float(0)})
+            All[ivalue].update({'wire_length_star':float(0)})
+            position_list.append(All[ivalue]['position'])
+
+            for kvalue in All[ivalue]['to']:
+                position_list.append(All[kvalue]['position'])
+                
+        All[ivalue]['wire_length_hpwl']=get_new_wirelength_hpwl(position_list)
+        All[ivalue]['wire_length_clique']=get_new_wirelength_clique(position_list)
+        All[ivalue]['wire_length_star']=get_new_wirelength_star(position_list)
+
+
+    capa_wlm=wlm['capacitance']
+    capa_estimate=(0.07*0.077161)
+    slope=wlm['slope']
+    fanoutdict=dict()
+    fanlist=list()
+    refanlist=list()
+
+    for idx,ivalue in enumerate(wlm):
+        if 'fanout_length' in ivalue:
+            fanoutdict[int(ivalue.split("fanout_length")[1])]=wlm[ivalue]
+
+    fanlist=sorted(fanoutdict.keys())        
+    refanlist=copy.deepcopy(fanlist)
+    refanlist.sort(reverse=True)
+
+    for idx,ivalue in enumerate(All):
+        how_many_fanout=int()
+
+        if All[ivalue]['stage'][1]=='OUTPUT':
+            All[ivalue].update({'hpwl_model_cap':All[ivalue]['wire_length_hpwl']*capa_estimate})
+            All[ivalue].update({'clique_model_cap':All[ivalue]['wire_length_clique']*capa_estimate})
+            All[ivalue].update({'star_model_cap':All[ivalue]['wire_length_star']*capa_estimate})
+            All[ivalue].update({'wire_length_wire_load':float(0)})
+            All[ivalue].update({'wire_load_model_cap':float(0)})
+
+            how_many_fanout=(len(All[ivalue]['to']))
+            if how_many_fanout==0:
+                All[ivalue]['wire_length_wire_load']=float(0)
+                All[ivalue]['wire_load_model_cap']=float(0)
+            
+            else:
+                if how_many_fanout in fanoutdict:
+                    All[ivalue]['wire_length_wire_load']=fanoutdict[how_many_fanout]
+                    
+                elif how_many_fanout>fanlist[-1]:
+                    All[ivalue]['wire_length_wire_load']=slope*(how_many_fanout-(fanlist[-1]))+fanoutdict[fanlist[-1]]
+
+                else:
+
+                    min_int=int()
+                    max_int=int()
+                    portion=float()
+                    for kdx in range(len(fanlist)):
+                        if fanlist[kdx]<how_many_fanout and fanlist[kdx+1]>how_many_fanout:
+                            min_int=fanlist[kdx]
+                            break
+
+                    for kdx in range(len(refanlist)):
+                        if refanlist[kdx]>how_many_fanout and refanlist[kdx+1]<how_many_fanout:
+                            max_int=refanlist[kdx]
+                            break
+
+                    All[ivalue]['wire_length_wire_load']=(((how_many_fanout-min_int)/(max_int-min_int))*(fanoutdict[min_int]-fanoutdict[max_int]))+fanoutdict[min_int]
+                
+                All[ivalue]['wire_load_model_cap']=All[ivalue]['wire_length_wire_load']*capa_wlm
+    return All
+
+
+
+
+def get_new_wirelength_hpwl(position_list_list):
+    if len(position_list_list)==1:
+        return float(0)
+
+    else:
+
+        min_x=float()
+        max_x=float()
+        min_y=float()
+        max_y=float()
+        for kkdx in range(len(position_list_list)):
+            if max_x<position_list_list[kkdx][0]:
+                max_x=position_list_list[kkdx][0]
+            if max_y<position_list_list[kkdx][1]:
+                max_y=position_list_list[kkdx][1]
+        min_x=max_x
+        min_y=max_y
+        for kkdx in range(len(position_list_list)):
+            if min_x>position_list_list[kkdx][0]:
+                min_x=position_list_list[kkdx][0]
+            if min_y>position_list_list[kkdx][1]:
+                min_y=position_list_list[kkdx][1]
+
+
+        ans=(float(max_x)-float(min_x))+float((max_y)-float(min_y))
+        return ans
+
+
+
+
+def get_new_wirelength_star(position_list_list): 
+    if len(position_list_list)==1:
+        return float(0)
+    else:
+
+        dis_x=float()
+        dis_y=float()
+        start_x=float(position_list_list[0][0])
+        start_y=float(position_list_list[0][1])
+
+        for kkdx in range(len(position_list_list)):
+                dis_x=dis_x+abs(start_x-float(position_list_list[kkdx][0]))
+                dis_y=dis_y+abs(start_y-float(position_list_list[kkdx][1]))
+
+        ans=dis_x+dis_y
+        return ans
+
+
+
+
+def get_new_wirelength_clique(position_list_list):
+    if len(position_list_list)==1:
+        return float(0)
+    else:
+
+        dis_x=float()
+        dis_y=float()
+        start_x=float()
+        start_y=float()
+        for iiidx in range(len(position_list_list)):
+            for kkkdx in range(len(position_list_list)):
+                if kkkdx <= iiidx :
+                    continue
+                else:
+                    dis_x=dis_x+abs(float(position_list_list[iiidx][0])-float(position_list_list[kkkdx][0]))
+                    dis_y=dis_y+abs(float(position_list_list[iiidx][1])-float(position_list_list[kkkdx][1]))
+            ans=dis_x+dis_y
+        return ans
+
+
+def get_new_Delay_of_nodes_CLK(clk_All_with_wire_cap,CLK_mode):
+    All=copy.deepcopy(clk_All_with_wire_cap)
+    if CLK_mode=='ideal':
+        for idx,ivalue in enumerate(All):
+            All[ivalue]['fall_Delay']=0
+            All[ivalue]['rise_Delay']=0
+            All[ivalue]['fall_Transition']=0
+            All[ivalue]['rise_Transition']=0
+
+    else: ############################ 코딩 필요 (clk의 real한 경우)
+        for idx,ivalue in enumerate(All):
+            if All[ivalue]['stage']==[0,'OUTPUT']:
+                break
+
+    return All
+
+
+
+
+def get_new_Delay_of_nodes_stage0(Gall,TALL,wire_mode,lliberty_type): ################ wire_mode: 'hpwl_model'의 경우, 'clique_model'의 경우, 'star_model'의 경우, 'wire_load_model'의 경우가 있다.
+
+    All=copy.deepcopy(Gall)
+    TAll=copy.deepcopy(TALL)
+    wirecap=wire_mode+'_model_cap'
+
+    for idx,ivalue in enumerate(All):
+        if All[ivalue]['stage']==[0,'OUTPUT']:
+            if All[ivalue]['type']=='PIN':################ direction이 INPUT 인 external PIN의 초기조건 : no slew, no delay로 본다.
+                All[ivalue]['fall_Delay']=0
+                All[ivalue]['rise_Delay']=0
+                All[ivalue]['fall_Transition']=0
+                All[ivalue]['rise_Transition']=0
+                All[ivalue]['load_capacitance_rise']=0
+                All[ivalue]['load_capacitance_fall']=0
+
+            elif All[ivalue]['type']=='cell':
+                if All[ivalue]['cell_type']=='Constant cell': ############################ (constant cell)
+                    All[ivalue]['load_capacitance_rise']=float(0)
+                    All[ivalue]['load_capacitance_fall']=float(0)
+
+                    All[ivalue]['fall_Delay']=float(0)
+                    All[ivalue]['rise_Delay']=float(0)
+                    All[ivalue]['fall_Transition']=float(0)
+                    All[ivalue]['rise_Transition']=float(0)
+                else:
+                    checking_path_output=lliberty_type+All[ivalue]['macroID']+'3_output_'+ivalue.split(' ')[1]
+                    if All[ivalue]['cell_type']=='Pos.edge D-Flip-Flop': ############################ (clk to q delay)
+                        checking_falling=TAll[ivalue.split(" ")[0]+' ck']['rise_Transition'] ############# 인풋 파라미터1-1 클락의 경우 unateness가 non-unate이다.
+                        checking_rising=TAll[ivalue.split(" ")[0]+' ck']['rise_Transition'] ############# 인풋 파라미터1-2
+
+                        load_capa_fall=float()
+                        load_capa_rise=float()
+                        for kdx in range(len(All[ivalue]['to'])):
+                            if All[All[ivalue]['to'][kdx]]['type']=='cell':
+                                checking_path_input=lliberty_type+All[ivalue]['macroID']+'2_input_'+ivalue.split(' ')[1]+'.tsv'
+                                df1=pd.read_csv(checking_path_input,sep='\t')
+                                load_capa_rise=load_capa_rise+float(df1.iloc[1,1])
+                                load_capa_fall=load_capa_fall+float(df1.iloc[0,1])
+                        load_capa_rise=load_capa_rise+All[ivalue][wirecap] ############### 인풋 파라미터2-1
+                        load_capa_fall=load_capa_fall+All[ivalue][wirecap] ############### 인풋 파라미터2-2
+                        All[ivalue]['load_capacitance_rise']=load_capa_rise
+                        All[ivalue]['load_capacitance_fall']=load_capa_fall
+
+                        df_fall_delay=pd.read_csv(checking_path_output+'/condition_0_cell_fall.tsv',sep='\t')
+                        df_rise_delay=pd.read_csv(checking_path_output+'/condition_0_cell_rise.tsv',sep='\t')
+                        df_fall_transition=pd.read_csv(checking_path_output+'/condition_0_fall_transtion.tsv',sep='\t')
+                        df_rise_transition=pd.read_csv(checking_path_output+'/condition_0_rise_transtion.tsv',sep='\t')
+                        
+                        All[ivalue]['fall_Delay']=get_value_from_table(df_fall_delay,checking_rising,All[ivalue]['load_capacitance_fall'])+TAll[ivalue.split(" ")[0]+' CK']['rise_Delay']
+                        All[ivalue]['rise_Delay']=get_value_from_table(df_rise_delay,checking_rising,All[ivalue]['load_capacitance_rise'])+TAll[ivalue.split(" ")[0]+' CK']['rise_Delay']
+                        All[ivalue]['fall_Transition']=get_value_from_table(df_fall_transition,checking_rising,All[ivalue]['load_capacitance_fall'])
+                        All[ivalue]['rise_Transition']=get_value_from_table(df_rise_transition,checking_rising,All[ivalue]['load_capacitance_rise'])
+
+                    else:
+                        df_info_macro=pd.read_csv(checking_path_output+'/0_info.tsv',sep='\t')
+                        if 'uanteness : complex' in list(df_info_macro[ivalue.split(' ')[1]])[2]:
+                            All[ivalue]['fall_Delay']=float(0)
+                            All[ivalue]['rise_Delay']=float(0)
+                            All[ivalue]['fall_Transition']=float(0)
+                            All[ivalue]['rise_Transition']=float(0)
+                        else:
+                            df_fall_delay=checking_path_output+'/condition_0_cell_fall.txt'
+                            df_rise_delay=checking_path_output+'/condition_0_cell_rise.txt'
+                            df_fall_transition=checking_path_output+'/condition_0_fall_transtion.txt'
+                            df_rise_transition=checking_path_output+'/condition_0_rise_transtion.txt'
+
+                            file=open(df_fall_delay,'r')
+                            strings=file.readlines()
+                            if '\n' in strings[0]:
+                                strings[0]=strings[0].replace('\n','')
+                            All[ivalue]['fall_Delay']=float(strings[0])
+                            file.close()
+
+                            file=open(df_rise_delay,'r')
+                            strings=file.readlines()
+                            if '\n' in strings[0]:
+                                strings[0]=strings[0].replace('\n','')
+                            All[ivalue]['fall_Delay']=float(strings[0])
+                            file.close()
+
+                            file=open(df_fall_transition,'r')
+                            strings=file.readlines()
+                            if '\n' in strings[0]:
+                                strings[0]=strings[0].replace('\n','')
+                            All[ivalue]['fall_Delay']=float(strings[0])
+                            file.close()
+
+                            file=open(df_rise_transition,'r')
+                            strings=file.readlines()
+                            if '\n' in strings[0]:
+                                strings[0]=strings[0].replace('\n','')
+                            All[ivalue]['fall_Delay']=float(strings[0])
+                            file.close()
+
+
+    for idx,ivalue in enumerate(All):
+        if All[ivalue]['stage']==[0,'INPUT']:
+            All[ivalue]['fall_Delay']=All[All[ivalue]['from'][0]]['fall_Delay']
+            All[ivalue]['rise_Delay']=All[All[ivalue]['from'][0]]['rise_Delay']
+            All[ivalue]['input_transition_fall']=All[All[ivalue]['from'][0]]['fall_Transition']
+            All[ivalue]['input_transition_rise']=All[All[ivalue]['from'][0]]['rise_Transition']
+            
+    return All
 
 
 
 
 
+def get_value_from_table(df,value_transition,value_capacitance):
+
+    value_float=float()
+    x1=float()
+    x2=float()
+    y1=float()
+    y2=float()
+    aaa=float()
+    bbb=float()
+    ccc=float()
+    ddd=float()
+
+    stryyy=str()
+    nextyyy=str()
+    indxxx=int()
+
+    if value_capacitance<=float(list(df.columns)[1]):
+        stryyy=list(df.columns)[1]
+        nextyyy=list(df.columns)[2]
+        y1=float(list(df.columns)[1])
+        y2=float(list(df.columns)[2])
+
+    if value_capacitance>=float(list(df.columns)[7]):
+        stryyy=list(df.columns)[6]
+        nextyyy=list(df.columns)[7]
+        y1=float(list(df.columns)[6])
+        y2=float(list(df.columns)[7])
+
+    if value_capacitance>float(list(df.columns)[1]) and value_capacitance<float(list(df.columns)[7]):
+        for idx in range(6):
+            if float(list(df.columns)[idx+1])<=value_capacitance and value_capacitance<=float(list(df.columns)[idx+2]):
+                stryyy=list(df.columns)[idx+1]
+                nextyyy=list(df.columns)[idx+2]
+                y1=float(list(df.columns)[idx+1])
+                y2=float(list(df.columns)[idx+2])
+
+    if value_transition<=list(df['Unnamed: 0'])[0]:
+        indxxx=0
+        x1=list(df['Unnamed: 0'])[0]
+        x2=list(df['Unnamed: 0'])[1]
+
+    if value_transition>=list(df['Unnamed: 0'])[6]:
+        indxxx=5
+        x1=list(df['Unnamed: 0'])[5]
+        x2=list(df['Unnamed: 0'])[6]
+
+    if value_transition>list(df['Unnamed: 0'])[0] and value_transition<list(df['Unnamed: 0'])[6]:
+        for idx in range(6):
+            if list(df['Unnamed: 0'])[idx]<=value_transition and value_transition<=list(df['Unnamed: 0'])[idx+1]:
+                indxxx=idx
+                x1=list(df['Unnamed: 0'])[idx]
+                x2=list(df['Unnamed: 0'])[idx+1]
+
+    T11=float(df[stryyy][indxxx])
+    T12=float(df[nextyyy][indxxx])
+    T21=float(df[stryyy][indxxx+1])
+    T22=float(df[nextyyy][indxxx+1])
+
+
+    aaa=(value_transition-x1)/(x2-x1)
+    bbb=(x2-value_transition)/(x2-x1)
+    ccc=(value_capacitance-y1)/(y2-y1)
+    ddd=(y2-value_capacitance)/(y2-y1)
+
+
+
+    TTT11=T11*bbb*ddd
+    TTT12=T12*bbb*ccc
+    TTT21=T21*aaa*ddd
+    TTT22=T22*aaa*ccc
+
+    value_float=TTT11+TTT12+TTT21+TTT22
+    
+    return value_float
 
 
 
 
+def get_new_all_Delay_Transition_of_nodes(delay_only_first_stage_without_clk_All,wire_mode,lliberty_type):
+    All=copy.deepcopy(delay_only_first_stage_without_clk_All)
 
+
+    wirecap=wire_mode+'_model_cap'
+    max_stage_number=int()
+
+    for idx,ivalue in enumerate(All):
+        if max_stage_number<All[ivalue]['stage'][0]:
+            max_stage_number=All[ivalue]['stage'][0]
+
+
+    for idx in range(max_stage_number+1):
+        if idx==0:
+            continue
+
+        for kdx,kvalue in enumerate(All):
+
+            if All[kvalue]['stage'][0]==idx and All[kvalue]['stage'][1]=='OUTPUT':
+
+
+                fall_delay_candidate=list()
+                rise_delay_candidate=list()
+                df_condition=pd.read_csv(lliberty_type+All[kvalue]['macroID']+'/3_output_'+kvalue.split(" ")[1]+'/0. info.tsv',sep='\t')
+
+                if len(list(df_condition.iloc[2:,1]))==1:
+                    related_pin=list(df_condition.iloc[2:,1])[0].split('related_pin : ')[1].split(" , unateness :")[0]
+                    unateness=list(df_condition.iloc[2:,1])[0].split(" , unateness : ")[1].strip()
+                    if unateness=='negative_unate':
+                        fall_delay_candidate.append([related_pin,[unateness,'No_condition',All[kvalue.split(' ')[0]+' '+related_pin]['rise_Delay']]])
+                        rise_delay_candidate.append([related_pin,[unateness,'No_condition',All[kvalue.split(' ')[0]+' '+related_pin]['fall_Delay']]])
+                    else:
+                        fall_delay_candidate.append([related_pin,[unateness,'No_condition',All[kvalue.split(' ')[0]+' '+related_pin]['fall_Delay']]])
+                        rise_delay_candidate.append([related_pin,[unateness,'No_condition',All[kvalue.split(' ')[0]+' '+related_pin]['rise_Delay']]])
+                        
+                else:
+
+                    related_pin=str()
+                    other_pins=list()
+                    unateness=str()
+                    for tdx in range(len(list(df_condition.iloc[2:,1]))):
+
+                        related_pin=list(df_condition.iloc[2:,1])[tdx].split('related_pin : ')[1].split(" , unateness :")[0]
+                        other_pins=list(df_condition.iloc[2:,1])[tdx].split("condition : ")[1].split(", related_pin : ")[0].split(' & ')
+                        unateness=list(df_condition.iloc[2:,1])[tdx].split(" , unateness : ")[1].strip()
+                        other_pins_delay=list()
+
+                        for jdx in range(len(other_pins)):
+                            if '!' in other_pins[jdx]:
+                                other_pins_delay.append(All[kvalue.split(' ')[0]+' '+other_pins[jdx].split('!')[1]]['fall_Delay'])
+                            else:
+                                other_pins_delay.append(All[kvalue.split(' ')[0]+' '+other_pins[jdx]]['rise_Delay'])
+                        
+                        if unateness=='negative_unate':
+                            kk=int()
+                            for jdx in range(len(other_pins_delay)):
+                                if other_pins_delay[jdx]<All[kvalue.split(' ')[0]+' '+related_pin]['rise_Delay']:
+                                    kk=kk+1
+                            if kk == len(other_pins_delay):
+                                fall_delay_candidate.append([related_pin,[unateness,'condition_number: '+str(tdx),All[kvalue.split(' ')[0]+' '+related_pin]['rise_Delay']]])
+                        
+                            qq=int()
+                            for jdx in range(len(other_pins_delay)):
+                                if other_pins_delay[jdx]<All[kvalue.split(' ')[0]+' '+related_pin]['fall_Delay']:
+                                    qq=qq+1
+                            if qq == len(other_pins_delay):
+                                rise_delay_candidate.append([related_pin,[unateness,'condition_number: '+str(tdx),All[kvalue.split(' ')[0]+' '+related_pin]['fall_Delay']]])                         
+
+                        if unateness=='positive_unate':
+                            kk=int()
+                            for jdx in range(len(other_pins_delay)):
+                                if other_pins_delay[jdx]<All[kvalue.split(' ')[0]+' '+related_pin]['fall_Delay']:
+                                    kk=kk+1
+                            if kk == len(other_pins_delay):
+                                fall_delay_candidate.append([related_pin,[unateness,'condition_number: '+str(tdx),All[kvalue.split(' ')[0]+' '+related_pin]['fall_Delay']]])
+                        
+                            qq=int()
+                            for jdx in range(len(other_pins_delay)):
+                                if other_pins_delay[jdx]<All[kvalue.split(' ')[0]+' '+related_pin]['rise_Delay']:
+                                    qq=qq+1
+                            if qq == len(other_pins_delay):
+                                rise_delay_candidate.append([related_pin,[unateness,'condition_number: '+str(tdx),All[kvalue.split(' ')[0]+' '+related_pin]['rise_Delay']]])
+                   
+                    rr=int()
+                    for tdx in range(len(fall_delay_candidate)):
+                        rr=rr+1
+                    if rr ==0:
+                        for tdx in range(len(list(df_condition.iloc[2:,1]))):
+                            related_pin=list(df_condition.iloc[2:,1])[tdx].split('related_pin : ')[1].split(" , unateness :")[0]
+                            other_pins=list(df_condition.iloc[2:,1])[tdx].split("condition : ")[1].split(", related_pin : ")[0].split(' & ')
+                            unateness=list(df_condition.iloc[2:,1])[tdx].split(" , unateness : ")[1].strip()
+                            if unateness=='negative_unate':
+                                fall_delay_candidate.append([related_pin,[unateness,'condition_number: '+str(tdx),All[kvalue.split(' ')[0]+' '+related_pin]['rise_Delay']]])
+                            else:
+                                fall_delay_candidate.append([related_pin,[unateness,'condition_number: '+str(tdx),All[kvalue.split(' ')[0]+' '+related_pin]['fall_Delay']]])
+
+                    rr=int()
+                    for tdx in range(len(rise_delay_candidate)):
+                        rr=rr+1
+                    if rr ==0:
+                        for tdx in range(len(list(df_condition.iloc[2:,1]))):
+                            related_pin=list(df_condition.iloc[2:,1])[tdx].split('related_pin : ')[1].split(" , unateness :")[0]
+                            other_pins=list(df_condition.iloc[2:,1])[tdx].split("condition : ")[1].split(", related_pin : ")[0].split(' & ')
+                            unateness=list(df_condition.iloc[2:,1])[tdx].split(" , unateness : ")[1].strip()
+                            if unateness=='negative_unate':
+                                rise_delay_candidate.append([related_pin,[unateness,'condition_number: '+str(tdx),All[kvalue.split(' ')[0]+' '+related_pin]['fall_Delay']]])
+                            else:
+                                rise_delay_candidate.append([related_pin,[unateness,'condition_number: '+str(tdx),All[kvalue.split(' ')[0]+' '+related_pin]['rise_Delay']]])
+
+                All[kvalue]['load_capacitance_rise']=float()
+                All[kvalue]['load_capacitance_fall']=float()
+
+                for tdx in range(len(All[kvalue]['to'])):
+                    if All[All[kvalue]['to'][tdx]]['type'] == 'cell':
+                        df4=pd.read_csv(lliberty_type+All[All[kvalue]['to'][tdx]]['macroID']+'/2_input_'+All[kvalue]['to'][tdx].split(' ')[1]+'.tsv',sep='\t')
+                        All[kvalue]['load_capacitance_fall']=All[kvalue]['load_capacitance_fall']+float(df4.iloc[0,1])
+                        All[kvalue]['load_capacitance_rise']=All[kvalue]['load_capacitance_rise']+float(df4.iloc[1,1])
+
+                All[kvalue]['load_capacitance_rise']=All[kvalue]['load_capacitance_rise']+All[kvalue][wirecap]
+                All[kvalue]['load_capacitance_fall']=All[kvalue]['load_capacitance_fall']+All[kvalue][wirecap]
+
+
+                fall_delay_finals=list()
+                for tdx in range(len(fall_delay_candidate)):
+
+                    input_ttrraann=float()
+                    unate=str()
+                    load_capa=All[kvalue]['load_capacitance_fall']
+                    df5_delay=pd.DataFrame()
+                    df5_trans=pd.DataFrame()
+                    if fall_delay_candidate[tdx][1][1]=='No_condition':
+                        path_to_table=lliberty_type+All[kvalue]['macroID']+'/3_output_'+kvalue.split(" ")[1]+'/condition_0_'
+                    else:
+                        path_to_table=lliberty_type+All[kvalue]['macroID']+'/3_output_'+kvalue.split(" ")[1]+'/condition_'+fall_delay_candidate[tdx][1][1].split(': ')[1]+'_'
+
+                    if fall_delay_candidate[tdx][1][0]=='negative_unate':
+                        unate='negative_unate'
+                        input_ttrraann=All[kvalue.split(' ')[0]+' '+fall_delay_candidate[tdx][0]]['input_transition_rise']
+                        df5_delay=pd.read_csv(path_to_table+'cell_fall.tsv',sep='\t')
+                        df5_trans=pd.read_csv(path_to_table+'fall_transtion.tsv',sep='\t')
+
+                    elif fall_delay_candidate[tdx][1][0]=='positive_unate':
+                        unate='positive_unate'
+                        input_ttrraann=All[kvalue.split(' ')[0]+' '+fall_delay_candidate[tdx][0]]['input_transition_fall']
+                        df5_delay=pd.read_csv(path_to_table+'cell_fall.tsv',sep='\t')
+                        df5_trans=pd.read_csv(path_to_table+'fall_transtion.tsv',sep='\t')
+
+                    fall_delay_finals.append([fall_delay_candidate[tdx][0],fall_delay_candidate[tdx][1][2]+get_value_from_table(df5_delay,input_ttrraann,load_capa),get_value_from_table(df5_trans,input_ttrraann,load_capa),unate])
+                    
+
+
+                rise_delay_finals=list()
+                for tdx in range(len(rise_delay_candidate)):
+
+                    input_ttrraann=float()
+                    unate=str()
+                    load_capa=All[kvalue]['load_capacitance_rise']
+                    df5_delay=pd.DataFrame()
+                    df5_trans=pd.DataFrame()
+                    if rise_delay_candidate[tdx][1][1]=='No_condition':
+                        path_to_table=lliberty_type+All[kvalue]['macroID']+'/3_output_'+kvalue.split(" ")[1]+'/condition_0_'
+                    else:
+                        path_to_table=lliberty_type+All[kvalue]['macroID']+'/3_output_'+kvalue.split(" ")[1]+'/condition_'+rise_delay_candidate[tdx][1][1].split(': ')[1]+'_'
+
+                    if rise_delay_candidate[tdx][1][0]=='negative_unate':
+                        unate='negative_unate'
+                        input_ttrraann=All[kvalue.split(' ')[0]+' '+rise_delay_candidate[tdx][0]]['input_transition_fall']
+                        df5_delay=pd.read_csv(path_to_table+'cell_rise.tsv',sep='\t')
+                        df5_trans=pd.read_csv(path_to_table+'rise_transtion.tsv',sep='\t')
+
+                    elif rise_delay_candidate[tdx][1][0]=='positive_unate':
+                        unate='positive_unate'
+                        input_ttrraann=All[kvalue.split(' ')[0]+' '+rise_delay_candidate[tdx][0]]['input_transition_rise']
+                        df5_delay=pd.read_csv(path_to_table+'cell_rise.tsv',sep='\t')
+                        df5_trans=pd.read_csv(path_to_table+'rise_transtion.tsv',sep='\t')
+
+                    rise_delay_finals.append([rise_delay_candidate[tdx][0],rise_delay_candidate[tdx][1][2]+get_value_from_table(df5_delay,input_ttrraann,load_capa),get_value_from_table(df5_trans,input_ttrraann,load_capa),unate])
+
+                comparing_delay1=float()
+                number_of_latest1=int()
+                for tdx in range(len(fall_delay_finals)):
+                    if comparing_delay1<fall_delay_finals[tdx][1]:
+                        number_of_latest1=tdx
+                        comparing_delay1=fall_delay_finals[tdx][1]
+
+                comparing_delay=float()
+                number_of_latest=int()
+                for tdx in range(len(rise_delay_finals)):
+                    if comparing_delay<rise_delay_finals[tdx][1]:
+                        number_of_latest=tdx
+                        comparing_delay=rise_delay_finals[tdx][1]
+
+                All[kvalue]['fall_Delay']=fall_delay_finals[number_of_latest1][1]
+                All[kvalue]['rise_Delay']=rise_delay_finals[number_of_latest][1]
+                All[kvalue]['fall_Transition']=fall_delay_finals[number_of_latest1][2]
+                All[kvalue]['rise_Transition']=rise_delay_finals[number_of_latest][2]
+                All[kvalue]['latest_pin_fall']=[fall_delay_finals[number_of_latest1][0],fall_delay_finals[number_of_latest1][3]]
+                All[kvalue]['latest_pin_rise']=[rise_delay_finals[number_of_latest][0],rise_delay_finals[number_of_latest][3]]
+
+
+        for kdx,kvalue in enumerate(All):
+            if All[kvalue]['stage'][0]==idx and All[kvalue]['stage'][1]=='INPUT':
+                All[kvalue]['fall_Delay']=All[All[kvalue]['from'][0]]['fall_Delay']
+                All[kvalue]['rise_Delay']=All[All[kvalue]['from'][0]]['rise_Delay']
+                All[kvalue]['input_transition_fall']=All[All[kvalue]['from'][0]]['fall_Transition']
+                All[kvalue]['input_transition_rise']=All[All[kvalue]['from'][0]]['rise_Transition']
+    
+    return All
+########################################################################################################################
+
+
+
+'''def get_new_wire_cap(Gall,wlm): ############femto farad
+    All=copy.deepcopy(Gall)
+    
+    for ivalue in All:
+        if All[ivalue]['direction']=='OUTPUT':
+            position_list=list()
+            All[ivalue].update({'wire_length_hpwl':float(0)})
+            All[ivalue].update({'wire_length_clique':float(0)})
+            All[ivalue].update({'wire_length_star':float(0)})
+            position_list.append(All[ivalue]['position'])
+
+            for kvalue in All[ivalue]['to']:
+                position_list.append(All[kvalue]['position'])
+                
+        All[ivalue]['wire_length_hpwl']=get_new_wirelength_hpwl(position_list)
+        All[ivalue]['wire_length_clique']=get_new_wirelength_clique(position_list)
+        All[ivalue]['wire_length_star']=get_new_wirelength_star(position_list)
+
+
+
+    capa_wlm=wlm['capacitance']
+    capa_estimate=(0.07*0.077161)
+    slope=wlm['slope']
+    fanoutdict=dict()
+    fanlist=list()
+    refanlist=list()
+
+    for idx,ivalue in enumerate(wlm):
+        if 'fanout_length' in ivalue:
+            fanoutdict[int(ivalue.split("fanout_length")[1])]=wlm[ivalue]
+
+    fanlist=sorted(fanoutdict.keys())        
+    refanlist=copy.deepcopy(fanlist)
+    refanlist.sort(reverse=True)
+
+    for idx,ivalue in enumerate(All):
+        how_many_fanout=int()
+
+        if All[ivalue]['stage'][1]=='OUTPUT':
+            All[ivalue].update({'hpwl_model_cap':All[ivalue]['wire_length_hpwl']*capa_estimate})
+            All[ivalue].update({'clique_model_cap':All[ivalue]['wire_length_clique']*capa_estimate})
+            All[ivalue].update({'star_model_cap':All[ivalue]['wire_length_star']*capa_estimate})
+            All[ivalue].update({'wire_length_wire_load':float(0)})
+            All[ivalue].update({'wire_load_model_cap':float(0)})
+
+            how_many_fanout=(len(All[ivalue]['to']))
+            if how_many_fanout==0:
+                All[ivalue]['wire_length_wire_load']=float(0)
+                All[ivalue]['wire_load_model_cap']=float(0)
+            
+            else:
+                if how_many_fanout in fanoutdict:
+                    All[ivalue]['wire_length_wire_load']=fanoutdict[how_many_fanout]
+                    
+                elif how_many_fanout>fanlist[-1]:
+                    All[ivalue]['wire_length_wire_load']=slope*(how_many_fanout-(fanlist[-1]))+fanoutdict[fanlist[-1]]
+
+                else:
+
+                    min_int=int()
+                    max_int=int()
+                    portion=float()
+                    for kdx in range(len(fanlist)):
+                        if fanlist[kdx]<how_many_fanout and fanlist[kdx+1]>how_many_fanout:
+                            min_int=fanlist[kdx]
+                            break
+
+                    for kdx in range(len(refanlist)):
+                        if refanlist[kdx]>how_many_fanout and refanlist[kdx+1]<how_many_fanout:
+                            max_int=refanlist[kdx]
+                            break
+
+                    All[ivalue]['wire_length_wire_load']=(((how_many_fanout-min_int)/(max_int-min_int))*(fanoutdict[min_int]-fanoutdict[max_int]))+fanoutdict[min_int]
+                
+                All[ivalue]['wire_load_model_cap']=All[ivalue]['wire_length_wire_load']*capa_wlm
+    
+    return All'''
+
+
+
+def getExtPinInfo_new(fileAddress):
+    expin=dict()
+    startpIdx=int()
+    endpIdx=int()
+
+
+    for qidx in range(len(whereisit)):
+        file=open(fileAddress)
+        for kdx,kline in enumerate(file):
+
+            kline=kline.strip()
+            pinPos=list()
+            pinOrient=str()
+            if qidx !=len(whereisit)-1:
+                if kdx >=whereisit[qidx] and kdx <whereisit[qidx+1]:
+                    if kdx ==whereisit[qidx]:
+
+                        if kline.split("-")[1].split("+")[0].strip()=='VSS' or kline.split("-")[1].split("+")[0].strip()=='VDD':
+                            continue
+                        pinName = kline.split("-")[1].split("+")[0].strip()
+                    elif kline.startswith("+ LAYER"):
+                        metalLayer = kline.split("+ LAYER")[1].split("(")[0].strip()
+                    elif kline.startswith("+ PLACED"):
+                        pinPosLine = kline.split("PLACED")[1].split("(")[1].split(")")[0].strip().split(" ")
+                        for coord in pinPosLine:
+                            pinPos.append(float(coord))
+                        #z 성분 (layer number)
+                        pinPos.append(int(metalLayer.replace("metal", "")))
+                        pinOrient = kline.split(")")[1].replace("\n","").replace(";", "")
+                    elif kline.startswith("+ FIXED"):
+                        pinPosLine = kline.split("FIXED")[1].split("(")[1].split(")")[0].strip().split(" ")
+                        for coord in pinPosLine:
+                            pinPos.append(float(coord))
+                        #z 성분 (layer number)
+                        pinPos.append(int(metalLayer.replace("metal", "")))
+                        pinOrient = kline.split(")")[1].replace("\n","").replace(";", "")
+                    expin[pinName]['position']=pinPos
+                    expin[pinName]['orientation']=pinOrient
+
+
+            elif qidx ==len(whereisit)-1:
+                if kdx >=whereisit[qidx] and kdx <endIdx:
+                    if kdx ==whereisit[qidx]:
+
+                        if kline.split("-")[1].split("+")[0].strip()=='VSS' or kline.split("-")[1].split("+")[0].strip()=='VDD':
+                            continue
+                        pinName = kline.split("-")[1].split("+")[0].strip()
+
+                    elif kline.startswith("+ LAYER"):
+                        metalLayer = kline.split("+ LAYER")[1].split("(")[0].strip()
+                    elif kline.startswith("+ PLACED"):
+                        pinPosLine = kline.split("PLACED")[1].split("(")[1].split(")")[0].strip().split(" ")
+                        for coord in pinPosLine:
+                            pinPos.append(float(coord))
+                        #z 성분 (layer number)
+                        pinPos.append(int(metalLayer.replace("metal", "")))
+                        pinOrient = kline.split(")")[1].replace("\n","").replace(";", "")
+                    elif kline.startswith("+ FIXED"):
+                        pinPosLine = kline.split("FIXED")[1].split("(")[1].split(")")[0].strip().split(" ")
+                        for coord in pinPosLine:
+                            pinPos.append(float(coord))
+                        #z 성분 (layer number)
+                        pinPos.append(int(metalLayer.replace("metal", "")))
+                        pinOrient = kline.split(")")[1].replace("\n","").replace(";", "")
+                    expin[pinName]['position']=pinPos
+                    expin[pinName]['orientation']=pinOrient
+
+        file.close()
+    return expin
 
 
 
@@ -162,35 +1006,6 @@ def getMacroInfo(fileAddress):
 
 
 
-def get_dieArea(fileAddress):
-    file = open(fileAddress, 'r')
-    range_macro=list()
-    area_line=str()
-    for idx, line in enumerate(file):
-        line = line.strip()
-
-        if line.startswith("DIEAREA"):                                   
-            area_line=line
-    file.close()
-
-    range_macro.append(area_line.split(") (")[0].split('( ')[1].strip().split(' '))
-    range_macro.append(area_line.split(") (")[1].split(' )')[0].strip().split(' '))
-
-    for idx in range(len(range_macro)):
-        for kdx in range(len(range_macro[idx])):
-            range_macro[idx][kdx]=float(range_macro[idx][kdx])
-    return range_macro
-
-
-def Get_RECT_macro(dict1):
-    RECT_macro=copy.deepcopy(dict1)
-
-    for macroid in RECT_macro:
-        for port in RECT_macro[macroid]:
-                
-                aaa=RECT_macro[macroid][port]['RECT']
-                (RECT_macro[macroid][port])=aaa
-    return RECT_macro
 
 
 
@@ -294,147 +1109,11 @@ def getNetListInfo(fileAddress):
 
 
 
-def getCell(fileAddress):
-    file = open(fileAddress)
-    cellInfo = dict()
-    for idx, line in enumerate(file):
-        if line.startswith("COMPONENTS"):
-            start_idx = idx+1
-        elif line.startswith("END COMPONENTS"):
-            end_idx = idx-1
-            break
-    file.close()
-
-    file = open(fileAddress)
-    for idx, line in enumerate(file):
-        if idx >= start_idx and idx <= end_idx:
-           if line.startswith("-"):
-              line = line.replace("- ","").replace("\n","")
-              cellID = line.split(" + ")[0].split(" ")[0]
-              cellInfo[cellID] = dict()
-              macroID = line.split(" + ")[0].split(" ")[1]
-              pos = [float(value) for value in line.split(" + ")[1].split("PLACED")[1].strip().split('(')[1].split(')')[0].strip().split(" ")]
-              orientation =  line.split(" + ")[1].split("PLACED")[1].strip().split('(')[1].split(')')[1].strip()
-              cellInfo[cellID] = {'type':'cell','macroID':macroID,"position": pos, "orientation": orientation}
-    return cellInfo
 
 
 
 
 
-def getExtPinInfo(fileAddress):
-    expin=dict()
-    startIdx=int()
-    endIdx=int()
-    file =open(fileAddress)
-    for idx, line in enumerate(file):
-        line = line.strip()
-        if line.startswith("PINS"):
-            pinNumb = line.split("PINS")[1].replace("\n", "").strip()
-            startIdx = idx
-        elif line.startswith("END PINS") or line.startswith("- VDD") or line.startswith("- VSS"):
-            endIdx = idx
-            break
-    file.close()
-
-
-    whereisit=list()
-    file =open(fileAddress)
-    for idx, line in enumerate(file):
-        if idx >startIdx and idx < endIdx:
-            line=line.strip()
-            if line.startswith("-") and 'VDD' not in line and 'VSS' not in line:
-                pinName = line.split("-")[1].split("+")[0].strip()
-                expin[pinName]=dict()
-                direction = line.split("DIRECTION")[1].split("+")[0].strip()
-                expin[pinName]['direction']=direction
-                expin[pinName]['type']='PIN'
-                whereisit.append(idx)
-            if line.startswith("-") and ('VDD'  in line or 'VSS' in line):
-                whereisit.append(idx)
-                break
-    file.close()
-
-    for qidx in range(len(whereisit)):
-        file=open(fileAddress)
-        for kdx,kline in enumerate(file):
-
-            kline=kline.strip()
-            pinPos=list()
-            pinOrient=str()
-            if qidx !=len(whereisit)-1:
-                if kdx >=whereisit[qidx] and kdx <whereisit[qidx+1]:
-                    if kdx ==whereisit[qidx]:
-
-                        if kline.split("-")[1].split("+")[0].strip()=='VSS' or kline.split("-")[1].split("+")[0].strip()=='VDD':
-                            continue
-                        pinName = kline.split("-")[1].split("+")[0].strip()
-                    elif kline.startswith("+ LAYER"):
-                        metalLayer = kline.split("+ LAYER")[1].split("(")[0].strip()
-                    elif kline.startswith("+ PLACED"):
-                        pinPosLine = kline.split("PLACED")[1].split("(")[1].split(")")[0].strip().split(" ")
-                        for coord in pinPosLine:
-                            pinPos.append(float(coord))
-                        #z 성분 (layer number)
-                        pinPos.append(int(metalLayer.replace("metal", "")))
-                        pinOrient = kline.split(")")[1].replace("\n","").replace(";", "")
-                    elif kline.startswith("+ FIXED"):
-                        pinPosLine = kline.split("FIXED")[1].split("(")[1].split(")")[0].strip().split(" ")
-                        for coord in pinPosLine:
-                            pinPos.append(float(coord))
-                        #z 성분 (layer number)
-                        pinPos.append(int(metalLayer.replace("metal", "")))
-                        pinOrient = kline.split(")")[1].replace("\n","").replace(";", "")
-                    expin[pinName]['position']=pinPos
-                    expin[pinName]['orientation']=pinOrient
-
-
-            elif qidx ==len(whereisit)-1:
-                if kdx >=whereisit[qidx] and kdx <endIdx:
-                    if kdx ==whereisit[qidx]:
-
-                        if kline.split("-")[1].split("+")[0].strip()=='VSS' or kline.split("-")[1].split("+")[0].strip()=='VDD':
-                            continue
-                        pinName = kline.split("-")[1].split("+")[0].strip()
-
-                    elif kline.startswith("+ LAYER"):
-                        metalLayer = kline.split("+ LAYER")[1].split("(")[0].strip()
-                    elif kline.startswith("+ PLACED"):
-                        pinPosLine = kline.split("PLACED")[1].split("(")[1].split(")")[0].strip().split(" ")
-                        for coord in pinPosLine:
-                            pinPos.append(float(coord))
-                        #z 성분 (layer number)
-                        pinPos.append(int(metalLayer.replace("metal", "")))
-                        pinOrient = kline.split(")")[1].replace("\n","").replace(";", "")
-                    elif kline.startswith("+ FIXED"):
-                        pinPosLine = kline.split("FIXED")[1].split("(")[1].split(")")[0].strip().split(" ")
-                        for coord in pinPosLine:
-                            pinPos.append(float(coord))
-                        #z 성분 (layer number)
-                        pinPos.append(int(metalLayer.replace("metal", "")))
-                        pinOrient = kline.split(")")[1].replace("\n","").replace(";", "")
-                    expin[pinName]['position']=pinPos
-                    expin[pinName]['orientation']=pinOrient
-
-        file.close()
-    return expin
-
-
-
-def get_def_data_unit(defdef):
-    data_unit=None
-    file = open(defdef, 'r')
-    for idx, line in enumerate(file):
-        line = line.strip()
-        if line.startswith("UNITS DISTANCE MICRONS"):
-            data_unit=float(line.split(' ')[3])
-            break
-
-    if data_unit==None:
-        print('Error : def_data_unit doesn\'t exist')
-        return 'Error : def_data_unit doesn\'t exist : '+str(data_unit)
-
-    return data_unit
 
 
 
@@ -781,74 +1460,7 @@ def get_temporary2_defdef(graph,name_of_temp_defdef,macroInfo,def_data_unit,if_t
 
 
 
-def get_new_wirelength_hpwl(position_list_list):
-    if len(position_list_list)==1:
-        return float(0)
 
-    else:
-
-        min_x=float()
-        max_x=float()
-        min_y=float()
-        max_y=float()
-        for kkdx in range(len(position_list_list)):
-            if max_x<position_list_list[kkdx][0]:
-                max_x=position_list_list[kkdx][0]
-            if max_y<position_list_list[kkdx][1]:
-                max_y=position_list_list[kkdx][1]
-        min_x=max_x
-        min_y=max_y
-        for kkdx in range(len(position_list_list)):
-            if min_x>position_list_list[kkdx][0]:
-                min_x=position_list_list[kkdx][0]
-            if min_y>position_list_list[kkdx][1]:
-                min_y=position_list_list[kkdx][1]
-
-
-        ans=(float(max_x)-float(min_x))+float((max_y)-float(min_y))
-        return ans
-
-
-
-
-def get_new_wirelength_star(position_list_list): 
-    if len(position_list_list)==1:
-        return float(0)
-    else:
-
-        dis_x=float()
-        dis_y=float()
-        start_x=float(position_list_list[0][0])
-        start_y=float(position_list_list[0][1])
-
-        for kkdx in range(len(position_list_list)):
-                dis_x=dis_x+abs(start_x-float(position_list_list[kkdx][0]))
-                dis_y=dis_y+abs(start_y-float(position_list_list[kkdx][1]))
-
-        ans=dis_x+dis_y
-        return ans
-
-
-
-
-def get_new_wirelength_clique(position_list_list):
-    if len(position_list_list)==1:
-        return float(0)
-    else:
-
-        dis_x=float()
-        dis_y=float()
-        start_x=float()
-        start_y=float()
-        for iiidx in range(len(position_list_list)):
-            for kkkdx in range(len(position_list_list)):
-                if kkkdx <= iiidx :
-                    continue
-                else:
-                    dis_x=dis_x+abs(float(position_list_list[iiidx][0])-float(position_list_list[kkkdx][0]))
-                    dis_y=dis_y+abs(float(position_list_list[iiidx][1])-float(position_list_list[kkkdx][1]))
-            ans=dis_x+dis_y
-        return ans
 
 
 
@@ -857,10 +1469,12 @@ def get_net_summary(defdef,leflef,if_testing):
     macroInfo = getMacroInfo(leflef)
     port_first_RECT=Get_firstRECT_macro(leflef)
     lef_data_unit=get_lef_data_unit(leflef)
-    netListInfo = getNetListInfo(defdef) 
+    netListInfo = getNetListInfo(defdef)
+
     cell=getCell(defdef)
     extPinInfo = getExtPinInfo(defdef)
     def_data_unit=get_def_data_unit(defdef)
+
     netnet=getpinport(netListInfo,macroInfo,cell,port_first_RECT,extPinInfo,def_data_unit,lef_data_unit)
     if if_testing==1:
         netnet=temp_for_file(netnet)
@@ -879,6 +1493,63 @@ def temp_for_file(nets):
 
 
 if __name__ == "__main__":
+
+    file_address_lef='../data/deflef_to_graph_and_verilog/lefs/'
+    file_address_lef=file_address_lef+'superblue16.lef'
+
+    file_address_def='../data/deflef_to_graph_and_verilog/defs/'
+    ##file_address_def=file_address_def+'gcd.def'
+    file_address_def=file_address_def+'superblue16.def'
+
+    file_verilog='../data/deflef_to_graph_and_verilog/hypergraph/'
+    file_verilog=file_verilog+'superblue16_superblue16_Late/'
+
+    file_verilog_without_clk=file_verilog+'stage_without_clk.pickle'
+    file_verilog_with_clk=file_verilog+'stage_with_clk.pickle'
+
+    file_address_lib='../data/deflef_to_graph_and_verilog/libs/'
+    file_address_lib=file_address_lib+'superblue16_Late/'
+
+
+    lef_info=Get_info_lef(file_address_lef)
+    std_pin_of_cell_position=lef_info[0]
+    lef_unit=lef_info[1]
+
+    def_info=Get_info_def(file_address_def)
+    die_Area=def_info[0]
+    cell_extpin_position=def_info[1]
+    def_unit=def_info[2]
+
+    
+    stage_without_clk=dict()
+    with open(file_verilog_without_clk,'rb') as fw:
+        stage_without_clk=pickle.load(fw)
+
+    stage_with_clk=dict()
+    with open(file_verilog_with_clk,'rb') as fw:
+        stage_with_clk=pickle.load(fw)
+
+    file_address='../data/macro_info_nangate_typical/'
+    wire_load_model=list()   
+    with open('../data/OPENSTA/wire_load_model_openSTA.json', 'r') as f:
+        wire_load_model=json.load(f)
+    f.close()
+
+    default_wire_load_model=dict()
+    for idx in range(len(wire_load_model)):
+        if 'default_wire_load' in wire_load_model[idx]['wire_load']:
+            default_wire_load_model=wire_load_model[idx]
+
+
+    wire_cap_without_clk=get_position_with_wire_cap(def_unit,lef_unit,cell_extpin_position,std_pin_of_cell_position,stage_without_clk,default_wire_load_model)
+    wire_cap_with_clk=get_position_with_wire_cap(def_unit,lef_unit,cell_extpin_position,std_pin_of_cell_position,stage_with_clk,default_wire_load_model)
+
+
+    ideal_clk=get_new_Delay_of_nodes_CLK(wire_cap_with_clk,'ideal')
+    first_delay=get_new_Delay_of_nodes_stage0(wire_cap_without_clk,ideal_clk,'wire_load_model',file_address_lib)
+
+    all_delay=get_new_all_Delay_Transition_of_nodes(first_delay,'wire_load_model',file_address_lib)
+
     '''arguments=sys.argv
     def_name=arguments[1]
     inputdef=def_name.split('.def')[0]+'_revised.def'
@@ -917,14 +1588,6 @@ if __name__ == "__main__":
     temporary_def_file_name='../data/deflef_to_graph_and_verilog/0. defs/'+name_of_defdef.replace('_revised','')+'/'+temporary_def'''
 
 #@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ parsing 
-
-    file_address_lef='../data/deflef_to_graph_and_verilog/lefs/'
-    file_address_lef=file_address_lef+'superblue16.lef'
-    lef_info=Get_info_lef(file_address_lef)
-    print(json.dumps(lef_info[0],indent=4))
-    print()
-    print(lef_info[1])
-
 
     '''macroInfo = getMacroInfo(leflef)
     def_data_unit=get_def_data_unit(defdef)
