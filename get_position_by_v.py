@@ -8,6 +8,8 @@ import shutil
 import re
 import pickle
 import pandas as pd
+import time
+
 
 
 def Get_info_lef(fileAddress):
@@ -232,9 +234,9 @@ def get_position_with_wire_cap(def_unit,lef_unit,cell_extpin_position,std_pin_of
             for kvalue in All[ivalue]['to']:
                 position_list.append(All[kvalue]['position'])
                 
-        All[ivalue]['wire_length_hpwl']=get_new_wirelength_hpwl(position_list)
-        All[ivalue]['wire_length_clique']=get_new_wirelength_clique(position_list)
-        All[ivalue]['wire_length_star']=get_new_wirelength_star(position_list)
+            All[ivalue]['wire_length_hpwl']=get_new_wirelength_hpwl(position_list)
+            All[ivalue]['wire_length_clique']=get_new_wirelength_clique(position_list)
+            All[ivalue]['wire_length_star']=get_new_wirelength_star(position_list)
 
 
     capa_wlm=wlm['capacitance']
@@ -412,7 +414,7 @@ def get_new_Delay_of_nodes_stage0(Gall,TALL,wire_mode,lliberty_type): ##########
                     All[ivalue]['fall_Transition']=float(0)
                     All[ivalue]['rise_Transition']=float(0)
                 else:
-                    checking_path_output=lliberty_type+All[ivalue]['macroID']+'3_output_'+ivalue.split(' ')[1]
+                    checking_path_output=lliberty_type+All[ivalue]['macroID']+'/3_output_'+ivalue.split(' ')[1]
                     if All[ivalue]['cell_type']=='Pos.edge D-Flip-Flop': ############################ (clk to q delay)
                         checking_falling=TAll[ivalue.split(" ")[0]+' ck']['rise_Transition'] ############# 인풋 파라미터1-1 클락의 경우 unateness가 non-unate이다.
                         checking_rising=TAll[ivalue.split(" ")[0]+' ck']['rise_Transition'] ############# 인풋 파라미터1-2
@@ -421,7 +423,8 @@ def get_new_Delay_of_nodes_stage0(Gall,TALL,wire_mode,lliberty_type): ##########
                         load_capa_rise=float()
                         for kdx in range(len(All[ivalue]['to'])):
                             if All[All[ivalue]['to'][kdx]]['type']=='cell':
-                                checking_path_input=lliberty_type+All[ivalue]['macroID']+'2_input_'+ivalue.split(' ')[1]+'.tsv'
+                                temp_input=All[ivalue]['to'][kdx]
+                                checking_path_input=lliberty_type+All[temp_input]['macroID']+'/2_input_'+temp_input.split(' ')[1]+'.tsv'
                                 df1=pd.read_csv(checking_path_input,sep='\t')
                                 load_capa_rise=load_capa_rise+float(df1.iloc[1,1])
                                 load_capa_fall=load_capa_fall+float(df1.iloc[0,1])
@@ -432,17 +435,17 @@ def get_new_Delay_of_nodes_stage0(Gall,TALL,wire_mode,lliberty_type): ##########
 
                         df_fall_delay=pd.read_csv(checking_path_output+'/condition_0_cell_fall.tsv',sep='\t')
                         df_rise_delay=pd.read_csv(checking_path_output+'/condition_0_cell_rise.tsv',sep='\t')
-                        df_fall_transition=pd.read_csv(checking_path_output+'/condition_0_fall_transtion.tsv',sep='\t')
-                        df_rise_transition=pd.read_csv(checking_path_output+'/condition_0_rise_transtion.tsv',sep='\t')
+                        df_fall_transition=pd.read_csv(checking_path_output+'/condition_0_fall_transition.tsv',sep='\t')
+                        df_rise_transition=pd.read_csv(checking_path_output+'/condition_0_rise_transition.tsv',sep='\t')
                         
-                        All[ivalue]['fall_Delay']=get_value_from_table(df_fall_delay,checking_rising,All[ivalue]['load_capacitance_fall'])+TAll[ivalue.split(" ")[0]+' CK']['rise_Delay']
-                        All[ivalue]['rise_Delay']=get_value_from_table(df_rise_delay,checking_rising,All[ivalue]['load_capacitance_rise'])+TAll[ivalue.split(" ")[0]+' CK']['rise_Delay']
+                        All[ivalue]['fall_Delay']=get_value_from_table(df_fall_delay,checking_rising,All[ivalue]['load_capacitance_fall'])+TAll[ivalue.split(" ")[0]+' ck']['rise_Delay']
+                        All[ivalue]['rise_Delay']=get_value_from_table(df_rise_delay,checking_rising,All[ivalue]['load_capacitance_rise'])+TAll[ivalue.split(" ")[0]+' ck']['rise_Delay']
                         All[ivalue]['fall_Transition']=get_value_from_table(df_fall_transition,checking_rising,All[ivalue]['load_capacitance_fall'])
                         All[ivalue]['rise_Transition']=get_value_from_table(df_rise_transition,checking_rising,All[ivalue]['load_capacitance_rise'])
 
                     else:
                         df_info_macro=pd.read_csv(checking_path_output+'/0_info.tsv',sep='\t')
-                        if 'uanteness : complex' in list(df_info_macro[ivalue.split(' ')[1]])[2]:
+                        if 'unateness : complex' in list(df_info_macro[ivalue.split(' ')[1]])[2]:
                             All[ivalue]['fall_Delay']=float(0)
                             All[ivalue]['rise_Delay']=float(0)
                             All[ivalue]['fall_Transition']=float(0)
@@ -450,8 +453,8 @@ def get_new_Delay_of_nodes_stage0(Gall,TALL,wire_mode,lliberty_type): ##########
                         else:
                             df_fall_delay=checking_path_output+'/condition_0_cell_fall.txt'
                             df_rise_delay=checking_path_output+'/condition_0_cell_rise.txt'
-                            df_fall_transition=checking_path_output+'/condition_0_fall_transtion.txt'
-                            df_rise_transition=checking_path_output+'/condition_0_rise_transtion.txt'
+                            df_fall_transition=checking_path_output+'/condition_0_fall_transition.txt'
+                            df_rise_transition=checking_path_output+'/condition_0_rise_transition.txt'
 
                             file=open(df_fall_delay,'r')
                             strings=file.readlines()
@@ -712,13 +715,13 @@ def get_new_all_Delay_Transition_of_nodes(delay_only_first_stage_without_clk_All
                         unate='negative_unate'
                         input_ttrraann=All[kvalue.split(' ')[0]+' '+fall_delay_candidate[tdx][0]]['input_transition_rise']
                         df5_delay=pd.read_csv(path_to_table+'cell_fall.tsv',sep='\t')
-                        df5_trans=pd.read_csv(path_to_table+'fall_transtion.tsv',sep='\t')
+                        df5_trans=pd.read_csv(path_to_table+'fall_transition.tsv',sep='\t')
 
                     elif fall_delay_candidate[tdx][1][0]=='positive_unate':
                         unate='positive_unate'
                         input_ttrraann=All[kvalue.split(' ')[0]+' '+fall_delay_candidate[tdx][0]]['input_transition_fall']
                         df5_delay=pd.read_csv(path_to_table+'cell_fall.tsv',sep='\t')
-                        df5_trans=pd.read_csv(path_to_table+'fall_transtion.tsv',sep='\t')
+                        df5_trans=pd.read_csv(path_to_table+'fall_transition.tsv',sep='\t')
 
                     fall_delay_finals.append([fall_delay_candidate[tdx][0],fall_delay_candidate[tdx][1][2]+get_value_from_table(df5_delay,input_ttrraann,load_capa),get_value_from_table(df5_trans,input_ttrraann,load_capa),unate])
                     
@@ -741,13 +744,13 @@ def get_new_all_Delay_Transition_of_nodes(delay_only_first_stage_without_clk_All
                         unate='negative_unate'
                         input_ttrraann=All[kvalue.split(' ')[0]+' '+rise_delay_candidate[tdx][0]]['input_transition_fall']
                         df5_delay=pd.read_csv(path_to_table+'cell_rise.tsv',sep='\t')
-                        df5_trans=pd.read_csv(path_to_table+'rise_transtion.tsv',sep='\t')
+                        df5_trans=pd.read_csv(path_to_table+'rise_transition.tsv',sep='\t')
 
                     elif rise_delay_candidate[tdx][1][0]=='positive_unate':
                         unate='positive_unate'
                         input_ttrraann=All[kvalue.split(' ')[0]+' '+rise_delay_candidate[tdx][0]]['input_transition_rise']
                         df5_delay=pd.read_csv(path_to_table+'cell_rise.tsv',sep='\t')
-                        df5_trans=pd.read_csv(path_to_table+'rise_transtion.tsv',sep='\t')
+                        df5_trans=pd.read_csv(path_to_table+'rise_transition.tsv',sep='\t')
 
                     rise_delay_finals.append([rise_delay_candidate[tdx][0],rise_delay_candidate[tdx][1][2]+get_value_from_table(df5_delay,input_ttrraann,load_capa),get_value_from_table(df5_trans,input_ttrraann,load_capa),unate])
 
@@ -781,6 +784,96 @@ def get_new_all_Delay_Transition_of_nodes(delay_only_first_stage_without_clk_All
                 All[kvalue]['input_transition_rise']=All[All[kvalue]['from'][0]]['rise_Transition']
     
     return All
+
+
+
+
+def get_last_nodes_list(All):
+    list_of_path=list()
+    max_stage_number=int()
+
+    for idx,ivalue in enumerate(All):
+        if All[ivalue]['stage'][0]>max_stage_number:
+            max_stage_number=All[ivalue]['stage'][0]
+    
+    all_last_nodes=list()
+
+    df=pd.DataFrame({'last_node_name':[],'delay':[]})
+    new_df=pd.DataFrame()
+    for idx,ivalue in enumerate(All):
+        if len(All[ivalue]['to'])==0:
+                worst_state=str()
+                if All[ivalue]['fall_Delay']>All[ivalue]['rise_Delay']:
+                    worst_state='fall_Delay'
+                else:
+                    worst_state='rise_Delay'
+                new_df=pd.DataFrame({'last_node_name':[ivalue],'delay':[All[ivalue][worst_state]]})
+                df=df.append(new_df,ignore_index=True)
+
+    df=df.sort_values(by='delay',axis=0,ascending=False)
+    all_last_nodes=(list(df['last_node_name']))
+    return all_last_nodes
+
+
+
+def get_new_worst_path(All,worst_nodes):
+    list_of_path=list()
+    checking=worst_nodes
+
+
+    worst_state=str()
+    if All[worst_nodes]['fall_Delay']>All[worst_nodes]['rise_Delay']:
+        worst_state='falling'
+    else:
+        worst_state='rising'
+
+    idx=int()
+    while True:
+        if All[checking]['stage'][1]=='INPUT':
+
+            list_of_path.append([checking,worst_state])
+            checking=All[checking]['from'][0]
+        else:
+            if worst_state=='falling':
+
+                list_of_path.append([checking,worst_state])
+
+                if len(All[checking]['from'])==0:
+                    break
+
+                if All[checking]['latest_pin_fall'][1]=='positive_unate':
+                    worst_state='falling'
+                else:
+                    worst_state='rising'
+
+                checking=checking.split(" ")[0]+' '+All[checking]['latest_pin_fall'][0]
+
+            else:
+
+                list_of_path.append([checking,worst_state])
+
+                if len(All[checking]['from'])==0:
+                    break
+
+                if All[checking]['latest_pin_rise'][1]=='positive_unate':
+                    worst_state='rising'
+                else:
+                    worst_state='falling'
+                
+                checking=checking.split(" ")[0]+' '+All[checking]['latest_pin_rise'][0]
+
+
+    reverse_list_of_path=list(reversed(list_of_path))
+    for idx in range(len(reverse_list_of_path)):
+            if All[reverse_list_of_path[idx][0]]['stage'][1]=='OUTPUT':
+                if reverse_list_of_path[idx][1]=='falling':
+                    reverse_list_of_path[idx].append(All[reverse_list_of_path[idx][0]]['fall_Delay'])
+                if reverse_list_of_path[idx][1]=='rising':
+                    reverse_list_of_path[idx].append(All[reverse_list_of_path[idx][0]]['rise_Delay'])
+
+    return reverse_list_of_path
+
+
 ########################################################################################################################
 
 
@@ -1493,6 +1586,8 @@ def temp_for_file(nets):
 
 
 if __name__ == "__main__":
+    start = time.time()
+    print('start')
 
     file_address_lef='../data/deflef_to_graph_and_verilog/lefs/'
     file_address_lef=file_address_lef+'superblue16.lef'
@@ -1540,16 +1635,39 @@ if __name__ == "__main__":
         if 'default_wire_load' in wire_load_model[idx]['wire_load']:
             default_wire_load_model=wire_load_model[idx]
 
-
+    print('1차(clear)')
     wire_cap_without_clk=get_position_with_wire_cap(def_unit,lef_unit,cell_extpin_position,std_pin_of_cell_position,stage_without_clk,default_wire_load_model)
     wire_cap_with_clk=get_position_with_wire_cap(def_unit,lef_unit,cell_extpin_position,std_pin_of_cell_position,stage_with_clk,default_wire_load_model)
 
-
+    print('2차(clear)')
     ideal_clk=get_new_Delay_of_nodes_CLK(wire_cap_with_clk,'ideal')
-    first_delay=get_new_Delay_of_nodes_stage0(wire_cap_without_clk,ideal_clk,'wire_load_model',file_address_lib)
+    first_delay=get_new_Delay_of_nodes_stage0(wire_cap_without_clk,ideal_clk,'wire_load',file_address_lib)
+    print('3차')
+    all_delay=get_new_all_Delay_Transition_of_nodes(first_delay,'wire_load',file_address_lib)
+    print('성공?')
 
-    all_delay=get_new_all_Delay_Transition_of_nodes(first_delay,'wire_load_model',file_address_lib)
+    file_pathpath='temp_all_delay.json'
+    with open(file_pathpath,'w') as f:
+        json.dump(all_delay,f,indent=4)
 
+    total_delay=list()
+    total_delay_info=get_last_nodes_list(all_delay)
+    for idxxx in range(len(total_delay_info)):
+        what_has_worst_delay=total_delay_info[idxxx]
+        path_worst=get_new_worst_path(all_delay,what_has_worst_delay)
+        total_delay.append(path_worst)
+        if idxxx==0:
+            print(json.dumps(total_delay[0],indent=4))
+
+
+    print('확인하기')
+    file_pathtt='temp_all_worst_delay.json'
+    with open(file_pathtt,'w') as f:
+        json.dump(total_delay,f,indent=4)
+
+
+    print("time :", time.time() - start)
+    
     '''arguments=sys.argv
     def_name=arguments[1]
     inputdef=def_name.split('.def')[0]+'_revised.def'

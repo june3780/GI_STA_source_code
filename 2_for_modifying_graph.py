@@ -582,8 +582,8 @@ def get_new_Delay_of_nodes_stage0(Gall,TALL,wire_mode,lliberty_type): ##########
 
             df_fall_delay=pd.read_csv(checking_path_output+'/condition: 0, cell_fall.tsv',sep='\t')
             df_rise_delay=pd.read_csv(checking_path_output+'/condition: 0, cell_rise.tsv',sep='\t')
-            df_fall_transition=pd.read_csv(checking_path_output+'/condition: 0, fall_transtion.tsv',sep='\t')
-            df_rise_transition=pd.read_csv(checking_path_output+'/condition: 0, rise_transtion.tsv',sep='\t')
+            df_fall_transition=pd.read_csv(checking_path_output+'/condition: 0, fall_transition.tsv',sep='\t')
+            df_rise_transition=pd.read_csv(checking_path_output+'/condition: 0, rise_transition.tsv',sep='\t')
             
             All[ivalue]['fall_Delay']=get_value_from_table(df_fall_delay,checking_rising,All[ivalue]['load_capacitance_fall'])+TAll[ivalue.split(" ")[0]+' CK']['rise_Delay']
             All[ivalue]['rise_Delay']=get_value_from_table(df_rise_delay,checking_rising,All[ivalue]['load_capacitance_rise'])+TAll[ivalue.split(" ")[0]+' CK']['rise_Delay']
@@ -758,13 +758,13 @@ def get_new_all_Delay_Transition_of_nodes(delay_only_first_stage_without_clk_All
                         unate='negative_unate'
                         input_ttrraann=All[kvalue.split(' ')[0]+' '+fall_delay_candidate[tdx][0]]['input_transition_rise']
                         df5_delay=pd.read_csv(path_to_table+'cell_fall.tsv',sep='\t')
-                        df5_trans=pd.read_csv(path_to_table+'fall_transtion.tsv',sep='\t')
+                        df5_trans=pd.read_csv(path_to_table+'fall_transition.tsv',sep='\t')
 
                     elif fall_delay_candidate[tdx][1][0]=='positive_unate':
                         unate='positive_unate'
                         input_ttrraann=All[kvalue.split(' ')[0]+' '+fall_delay_candidate[tdx][0]]['input_transition_fall']
                         df5_delay=pd.read_csv(path_to_table+'cell_fall.tsv',sep='\t')
-                        df5_trans=pd.read_csv(path_to_table+'fall_transtion.tsv',sep='\t')
+                        df5_trans=pd.read_csv(path_to_table+'fall_transition.tsv',sep='\t')
 
                     fall_delay_finals.append([fall_delay_candidate[tdx][0],fall_delay_candidate[tdx][1][2]+get_value_from_table(df5_delay,input_ttrraann,load_capa),get_value_from_table(df5_trans,input_ttrraann,load_capa),unate])
                     
@@ -787,13 +787,13 @@ def get_new_all_Delay_Transition_of_nodes(delay_only_first_stage_without_clk_All
                         unate='negative_unate'
                         input_ttrraann=All[kvalue.split(' ')[0]+' '+rise_delay_candidate[tdx][0]]['input_transition_fall']
                         df5_delay=pd.read_csv(path_to_table+'cell_rise.tsv',sep='\t')
-                        df5_trans=pd.read_csv(path_to_table+'rise_transtion.tsv',sep='\t')
+                        df5_trans=pd.read_csv(path_to_table+'rise_transition.tsv',sep='\t')
 
                     elif rise_delay_candidate[tdx][1][0]=='positive_unate':
                         unate='positive_unate'
                         input_ttrraann=All[kvalue.split(' ')[0]+' '+rise_delay_candidate[tdx][0]]['input_transition_rise']
                         df5_delay=pd.read_csv(path_to_table+'cell_rise.tsv',sep='\t')
-                        df5_trans=pd.read_csv(path_to_table+'rise_transtion.tsv',sep='\t')
+                        df5_trans=pd.read_csv(path_to_table+'rise_transition.tsv',sep='\t')
 
                     rise_delay_finals.append([rise_delay_candidate[tdx][0],rise_delay_candidate[tdx][1][2]+get_value_from_table(df5_delay,input_ttrraann,load_capa),get_value_from_table(df5_trans,input_ttrraann,load_capa),unate])
 
