@@ -563,7 +563,7 @@ def get_new_Delay_of_nodes_stage0(Gall,TALL,wire_mode,lliberty_type): ##########
             All[ivalue]['load_capacitance_fall']=0
 
         if All[ivalue]['stage']==[0,'OUTPUT'] and All[ivalue]['type']=='cell' and 'LOGIC' not in All[ivalue]['macroID']: ############################ (clk to q delay)
-            checking_path_output='../data/OPENSTA/OPENSTA_'+liberty_type+'/'+All[ivalue]['macroID']+'/3. output: '+ivalue.split(' ')[1]
+            checking_path_output='../data/deflef_to_graph_and_verilog/libs/OPENSTA_'+liberty_type+'/'+All[ivalue]['macroID']+'/3_output_'+ivalue.split(' ')[1]
             checking_falling=TAll[ivalue.split(" ")[0]+' CK']['rise_Transition'] ############# 인풋 파라미터1-1 클락의 경우 unateness가 non-unate이다.
             checking_rising=TAll[ivalue.split(" ")[0]+' CK']['rise_Transition'] ############# 인풋 파라미터1-2
 
@@ -571,7 +571,7 @@ def get_new_Delay_of_nodes_stage0(Gall,TALL,wire_mode,lliberty_type): ##########
             load_capa_rise=float()
             for kdx in range(len(All[ivalue]['to'])):
                 if All[All[ivalue]['to'][kdx]]['type']=='cell':
-                    checking_path_input='../data/OPENSTA/OPENSTA_'+liberty_type+'/'+All[All[ivalue]['to'][kdx]]['macroID']+'/2. input: '+All[ivalue]['to'][kdx].split(" ")[1]+'.tsv'
+                    checking_path_input='../data/deflef_to_graph_and_verilog/libs/OPENSTA_'+liberty_type+'/'+All[All[ivalue]['to'][kdx]]['macroID']+'/2_input_'+All[ivalue]['to'][kdx].split(" ")[1]+'.tsv'
                     df1=pd.read_csv(checking_path_input,sep='\t')
                     load_capa_rise=load_capa_rise+float(df1.iloc[1,1])
                     load_capa_fall=load_capa_fall+float(df1.iloc[0,1])
@@ -580,10 +580,10 @@ def get_new_Delay_of_nodes_stage0(Gall,TALL,wire_mode,lliberty_type): ##########
             All[ivalue]['load_capacitance_rise']=load_capa_rise
             All[ivalue]['load_capacitance_fall']=load_capa_fall
 
-            df_fall_delay=pd.read_csv(checking_path_output+'/condition: 0, cell_fall.tsv',sep='\t')
-            df_rise_delay=pd.read_csv(checking_path_output+'/condition: 0, cell_rise.tsv',sep='\t')
-            df_fall_transition=pd.read_csv(checking_path_output+'/condition: 0, fall_transition.tsv',sep='\t')
-            df_rise_transition=pd.read_csv(checking_path_output+'/condition: 0, rise_transition.tsv',sep='\t')
+            df_fall_delay=pd.read_csv(checking_path_output+'/condition_0_cell_fall.tsv',sep='\t')
+            df_rise_delay=pd.read_csv(checking_path_output+'/condition_0_cell_rise.tsv',sep='\t')
+            df_fall_transition=pd.read_csv(checking_path_output+'/condition_0_fall_transition.tsv',sep='\t')
+            df_rise_transition=pd.read_csv(checking_path_output+'/condition_0_rise_transition.tsv',sep='\t')
             
             All[ivalue]['fall_Delay']=get_value_from_table(df_fall_delay,checking_rising,All[ivalue]['load_capacitance_fall'])+TAll[ivalue.split(" ")[0]+' CK']['rise_Delay']
             All[ivalue]['rise_Delay']=get_value_from_table(df_rise_delay,checking_rising,All[ivalue]['load_capacitance_rise'])+TAll[ivalue.split(" ")[0]+' CK']['rise_Delay']
@@ -621,7 +621,7 @@ def get_new_Delay_of_nodes_stage0(Gall,TALL,wire_mode,lliberty_type): ##########
 def get_new_all_Delay_Transition_of_nodes(delay_only_first_stage_without_clk_All,wire_mode,lliberty_type):
     All=copy.deepcopy(delay_only_first_stage_without_clk_All)
     liberty_type=lliberty_type.split('.lib')[0]
-    condition_table='../data/OPENSTA/OPENSTA_'+liberty_type+'/'
+    condition_table='../data/deflef_to_graph_and_verilog/libs/OPENSTA_'+liberty_type+'/'
 
     wirecap=wire_mode+'_model_cap'
     max_stage_number=int()
@@ -642,11 +642,11 @@ def get_new_all_Delay_Transition_of_nodes(delay_only_first_stage_without_clk_All
 
                 fall_delay_candidate=list()
                 rise_delay_candidate=list()
-                df_condition=pd.read_csv(condition_table+All[kvalue]['macroID']+'/3. output: '+kvalue.split(" ")[1]+'/0. info.tsv',sep='\t')
+                df_condition=pd.read_csv(condition_table+All[kvalue]['macroID']+'/3_output_'+kvalue.split(" ")[1]+'/0_info.tsv',sep='\t')
 
                 if len(list(df_condition.iloc[2:,1]))==1:
-                    related_pin=list(df_condition.iloc[2:,1])[0].split('related_pin : ')[1].split(" , unateness :")[0]
-                    unateness=list(df_condition.iloc[2:,1])[0].split(" , unateness : ")[1].strip()
+                    related_pin=list(df_condition.iloc[2:,1])[0].split('related_pin : ')[1].split(", unateness :")[0]
+                    unateness=list(df_condition.iloc[2:,1])[0].split(", unateness : ")[1].strip()
                     if unateness=='negative_unate':
                         fall_delay_candidate.append([related_pin,[unateness,'No_condition',All[kvalue.split(' ')[0]+' '+related_pin]['rise_Delay']]])
                         rise_delay_candidate.append([related_pin,[unateness,'No_condition',All[kvalue.split(' ')[0]+' '+related_pin]['fall_Delay']]])
@@ -661,9 +661,9 @@ def get_new_all_Delay_Transition_of_nodes(delay_only_first_stage_without_clk_All
                     unateness=str()
                     for tdx in range(len(list(df_condition.iloc[2:,1]))):
 
-                        related_pin=list(df_condition.iloc[2:,1])[tdx].split('related_pin : ')[1].split(" , unateness :")[0]
+                        related_pin=list(df_condition.iloc[2:,1])[tdx].split('related_pin : ')[1].split(", unateness :")[0]
                         other_pins=list(df_condition.iloc[2:,1])[tdx].split("condition : ")[1].split(", related_pin : ")[0].split(' & ')
-                        unateness=list(df_condition.iloc[2:,1])[tdx].split(" , unateness : ")[1].strip()
+                        unateness=list(df_condition.iloc[2:,1])[tdx].split(", unateness : ")[1].strip()
                         other_pins_delay=list()
 
                         for jdx in range(len(other_pins)):
@@ -707,9 +707,9 @@ def get_new_all_Delay_Transition_of_nodes(delay_only_first_stage_without_clk_All
                         rr=rr+1
                     if rr ==0:
                         for tdx in range(len(list(df_condition.iloc[2:,1]))):
-                            related_pin=list(df_condition.iloc[2:,1])[tdx].split('related_pin : ')[1].split(" , unateness :")[0]
+                            related_pin=list(df_condition.iloc[2:,1])[tdx].split('related_pin : ')[1].split(", unateness :")[0]
                             other_pins=list(df_condition.iloc[2:,1])[tdx].split("condition : ")[1].split(", related_pin : ")[0].split(' & ')
-                            unateness=list(df_condition.iloc[2:,1])[tdx].split(" , unateness : ")[1].strip()
+                            unateness=list(df_condition.iloc[2:,1])[tdx].split(", unateness : ")[1].strip()
                             if unateness=='negative_unate':
                                 fall_delay_candidate.append([related_pin,[unateness,'condition_number: '+str(tdx),All[kvalue.split(' ')[0]+' '+related_pin]['rise_Delay']]])
                             else:
@@ -720,9 +720,9 @@ def get_new_all_Delay_Transition_of_nodes(delay_only_first_stage_without_clk_All
                         rr=rr+1
                     if rr ==0:
                         for tdx in range(len(list(df_condition.iloc[2:,1]))):
-                            related_pin=list(df_condition.iloc[2:,1])[tdx].split('related_pin : ')[1].split(" , unateness :")[0]
+                            related_pin=list(df_condition.iloc[2:,1])[tdx].split('related_pin : ')[1].split(", unateness :")[0]
                             other_pins=list(df_condition.iloc[2:,1])[tdx].split("condition : ")[1].split(", related_pin : ")[0].split(' & ')
-                            unateness=list(df_condition.iloc[2:,1])[tdx].split(" , unateness : ")[1].strip()
+                            unateness=list(df_condition.iloc[2:,1])[tdx].split(", unateness : ")[1].strip()
                             if unateness=='negative_unate':
                                 rise_delay_candidate.append([related_pin,[unateness,'condition_number: '+str(tdx),All[kvalue.split(' ')[0]+' '+related_pin]['fall_Delay']]])
                             else:
@@ -733,7 +733,7 @@ def get_new_all_Delay_Transition_of_nodes(delay_only_first_stage_without_clk_All
 
                 for tdx in range(len(All[kvalue]['to'])):
                     if All[All[kvalue]['to'][tdx]]['type'] == 'cell':
-                        df4=pd.read_csv(condition_table+All[All[kvalue]['to'][tdx]]['macroID']+'/'+'2. input: '+All[kvalue]['to'][tdx].split(' ')[1]+'.tsv',sep='\t')
+                        df4=pd.read_csv(condition_table+All[All[kvalue]['to'][tdx]]['macroID']+'/'+'2_input_'+All[kvalue]['to'][tdx].split(' ')[1]+'.tsv',sep='\t')
                         All[kvalue]['load_capacitance_fall']=All[kvalue]['load_capacitance_fall']+float(df4.iloc[0,1])
                         All[kvalue]['load_capacitance_rise']=All[kvalue]['load_capacitance_rise']+float(df4.iloc[1,1])
 
@@ -750,9 +750,9 @@ def get_new_all_Delay_Transition_of_nodes(delay_only_first_stage_without_clk_All
                     df5_delay=pd.DataFrame()
                     df5_trans=pd.DataFrame()
                     if fall_delay_candidate[tdx][1][1]=='No_condition':
-                        path_to_table=condition_table+All[kvalue]['macroID']+'/3. output: '+kvalue.split(" ")[1]+'/condition: 0, '
+                        path_to_table=condition_table+All[kvalue]['macroID']+'/3_output_'+kvalue.split(" ")[1]+'/condition_0_'
                     else:
-                        path_to_table=condition_table+All[kvalue]['macroID']+'/3. output: '+kvalue.split(" ")[1]+'/condition: '+fall_delay_candidate[tdx][1][1].split(': ')[1]+', '
+                        path_to_table=condition_table+All[kvalue]['macroID']+'/3_output_'+kvalue.split(" ")[1]+'/condition_'+fall_delay_candidate[tdx][1][1].split(': ')[1]+'_'
 
                     if fall_delay_candidate[tdx][1][0]=='negative_unate':
                         unate='negative_unate'
@@ -779,9 +779,9 @@ def get_new_all_Delay_Transition_of_nodes(delay_only_first_stage_without_clk_All
                     df5_delay=pd.DataFrame()
                     df5_trans=pd.DataFrame()
                     if rise_delay_candidate[tdx][1][1]=='No_condition':
-                        path_to_table=condition_table+All[kvalue]['macroID']+'/3. output: '+kvalue.split(" ")[1]+'/condition: 0, '
+                        path_to_table=condition_table+All[kvalue]['macroID']+'/3_output_'+kvalue.split(" ")[1]+'/condition_0_'
                     else:
-                        path_to_table=condition_table+All[kvalue]['macroID']+'/3. output: '+kvalue.split(" ")[1]+'/condition: '+rise_delay_candidate[tdx][1][1].split(': ')[1]+', '
+                        path_to_table=condition_table+All[kvalue]['macroID']+'/3_output_'+kvalue.split(" ")[1]+'/condition_'+rise_delay_candidate[tdx][1][1].split(': ')[1]+'_'
 
                     if rise_delay_candidate[tdx][1][0]=='negative_unate':
                         unate='negative_unate'

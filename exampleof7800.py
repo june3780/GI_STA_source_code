@@ -2,7 +2,7 @@ from ast import arguments
 import os
 import shutil
 import sys
-
+import time
 
 
 
@@ -15,7 +15,7 @@ def get_file_and_make_directory(wiremode,file_type):
     while True:
         defdef=str()
         defdef=get_limitation(file_type,idx)
-
+        start=time.time()
         if defdef=='continue':
             idx=idx+1
             continue
@@ -23,15 +23,18 @@ def get_file_and_make_directory(wiremode,file_type):
         if defdef=='break':
             break
 
-        '''if wiremode=='star':
-            os.system('python3 0_revise_def_file.py '+defdef)
-            os.system('python3 1_test.py '+defdef)
+        if wiremode=='star':
+            #os.system('python3 0_revise_def_file.py '+defdef)
+            #os.system('python3 1_test.py '+defdef)
             os.system('python3 2_for_modifying_graph.py '+defdef+' '+wiremode+' '+file_type) 
         else:
-            os.system('python3 2_for_modifying_graph.py '+defdef+' '+wiremode+' '+file_type)'''
-        os.system('python3 CTS.py '+defdef+' '+wiremode+' '+file_type)
+            os.system('python3 2_for_modifying_graph.py '+defdef+' '+wiremode+' '+file_type)
+        ##os.system('python3 CTS.py '+defdef+' '+wiremode+' '+file_type)
+        print()
+        print('시간 :',time.time()-start)
         idx=idx+1
-
+        if idx>=1:
+            break
     return 0
 
 
@@ -230,9 +233,9 @@ if __name__ == "__main__":
     deflist=['bank','rbank','random','random3','Random','Random2','Random2_detailed','a1_bank','a1_rbank','a2_bank','a2_rbank','Rbank','Rbank2']
     wire_mod=['star']
 
-    for kkiiddxx in range(len(deflist)):
+    '''for kkiiddxx in range(len(deflist)):
         
-        get_def_files(deflist[kkiiddxx])
+        get_def_files(deflist[kkiiddxx])'''
     
 
 
@@ -241,4 +244,8 @@ if __name__ == "__main__":
             for kkiiddxx in range(len(deflist)):
                 print(deflist[kkiiddxx])
                 get_file_and_make_directory(wire_mod[iddx],deflist[kkiiddxx])
-                copy_scratch(wire_mod[iddx],deflist[kkiiddxx])
+                if  iddx==0:
+                    break
+            if iddx==0:
+                break
+                ##copy_scratch(wire_mod[iddx],deflist[kkiiddxx])

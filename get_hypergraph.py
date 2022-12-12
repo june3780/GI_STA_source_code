@@ -6,157 +6,137 @@ import sys
 import pickle
 import pandas as pd
 import copy
+import gc
 
+def get_each_cell(file,lib_file):
+    new_cell_new_dict=dict()
 
-def get_each_cell(file,libAdrress):
-    
-    cell_dict=dict()
-    input_pins=dict()
-    output_pins=dict()
-    nets=dict()
+    wire_dict=dict()
     ff=open(file)
     lines=ff.readlines()
-    not_use_output_pin=list()
     for idx in range(len(lines)):
-        checking_str=lines[idx].strip()
-        maybe_cell_name_or_input_or_output_or_wire=checking_str.replace('\n','').split(' ')[0]
 
-        if maybe_cell_name_or_input_or_output_or_wire not in os.listdir(libAdrress):
-            
+        checking_str=lines[idx].strip()
+        
+        maybe_cell_name_or_input_or_output_or_wire=checking_str.replace('\n','').split(' ')[0]
+        if maybe_cell_name_or_input_or_output_or_wire not in lib_file:
             if maybe_cell_name_or_input_or_output_or_wire=='input':
-                input_pins.update({checking_str.replace('\n','').split(' ')[1].replace(';',''):{'to':[],'from':[]}})
+
+                new_cell_new_dict.update({checking_str.replace('\n','').split(' ')[1].replace(';',''):{'to':[],'type':'pin','pin_direction':'input','stage':0}})
                 
             elif maybe_cell_name_or_input_or_output_or_wire=='output':
-                output_pins.update({checking_str.replace('\n','').split(' ')[1].replace(';',''):{'to':[],'from':[]}})
+                new_cell_new_dict.update({checking_str.replace('\n','').split(' ')[1].replace(';',''):{'from':[],'type':'pin','pin_direction':'output','stage':0}})
+
             elif maybe_cell_name_or_input_or_output_or_wire=='wire':
-                nets.update({checking_str.replace('\n','').split(' ')[1].replace(';',''):{'to':[],'from':[]}})
+                wire_dict.update({checking_str.replace('\n','').split(' ')[1].replace(';',''):{'to':[],'from':[]}})
 
         else:
-            cell_dict.update({maybe_cell_name_or_input_or_output_or_wire+' '+checking_str.replace('\n','').split(' ')[1]:{}})
-            in_lib_inffo=libAdrress+maybe_cell_name_or_input_or_output_or_wire
-            file_list_of_the_macro=os.listdir(in_lib_inffo)
+            new_cell_new_dict.update({checking_str.replace('\n','').split(' ')[1]:{'macroID':maybe_cell_name_or_input_or_output_or_wire,'input':{},'output':{},'type':'cell','description':lib_file[maybe_cell_name_or_input_or_output_or_wire]['description']}})
 
-            
+            list_of_check=checking_str.split('.')[1:]
+            for ddx in range(len(list_of_check)):
+                temp_pin=list_of_check[ddx].split('(')[0]
+                temp_net=list_of_check[ddx].split('(')[1]
+                temp_net=temp_net.split(')')[0]
+                list_of_check[ddx]='.'+temp_pin+'('+temp_net+')'
 
-            p=re.findall('[.]\w*[(]\w*[)]',checking_str)
-            for kdx in range(len(p)):
-                pin_name=p[kdx].split('.')[1].split('(')[0]
-                direction=str()
-                cell_dict[maybe_cell_name_or_input_or_output_or_wire+' '+checking_str.replace('\n','').split(' ')[1]].update({pin_name:{}})
-
-
-                if '2_input_'+pin_name+'.tsv' in file_list_of_the_macro:
-                    direction='INPUT'
-                elif '3_output_'+pin_name in file_list_of_the_macro:
-                    direction='OUTPUT'
-
-                cell_dict[maybe_cell_name_or_input_or_output_or_wire+' '+checking_str.replace('\n','').split(' ')[1]][pin_name].update({'direction':direction})
-
-                if direction=='INPUT':
-                    cell_dict[maybe_cell_name_or_input_or_output_or_wire+' '+checking_str.replace('\n','').split(' ')[1]][pin_name].update({'from':p[kdx].split('(')[1].split(')')[0]})
+            for kdx in range(len(list_of_check)):
+                pin_name=list_of_check[kdx].split('.')[1].split('(')[0]
+                if pin_name in lib_file[maybe_cell_name_or_input_or_output_or_wire]['input']:
+                    new_cell_new_dict[checking_str.replace('\n','').split(' ')[1]]['input'].update({pin_name:{'from':list_of_check[kdx].split('(')[1].split(')')[0]}})
                 else:
-                    cell_dict[maybe_cell_name_or_input_or_output_or_wire+' '+checking_str.replace('\n','').split(' ')[1]][pin_name].update({'to':p[kdx].split('(')[1].split(')')[0]})
+                    new_cell_new_dict[checking_str.replace('\n','').split(' ')[1]]['output'].update({pin_name:{'to':[list_of_check[kdx].split('(')[1].split(')')[0]]}})
+
     ff.close()
-    
-    new_cell_dict=dict()
 
     recursive_ivalue=dict()
-    for ivalue in cell_dict:
-
-        output_list=list()
-        input_list=list()
-        for kvalue in cell_dict[ivalue]:
-            if cell_dict[ivalue][kvalue]['direction']=='OUTPUT':
-                output_list.append(ivalue.split(' ')[1]+' '+kvalue)
-            else:
-                input_list.append(ivalue.split(' ')[1]+' '+kvalue)
-
-        if len(output_list)==0:
-            not_use_output_pin.append(ivalue)
-
-        for kvalue in cell_dict[ivalue]:
-            new_cell_dict.update({ivalue.split(' ')[1]+' '+kvalue:{'direction':cell_dict[ivalue][kvalue]['direction'],'type':'cell','cell_type':str(),'macroID':ivalue.split(' ')[0]}})
-
-            if new_cell_dict[ivalue.split(' ')[1]+' '+kvalue]['direction']=='INPUT':
-                if cell_dict[ivalue][kvalue]['from'] in nets:
-                    nets[cell_dict[ivalue][kvalue]['from']]['to'].append(ivalue.split(' ')[1]+' '+kvalue)
-                elif cell_dict[ivalue][kvalue]['from'] in input_pins:
-                    input_pins[cell_dict[ivalue][kvalue]['from']]['to'].append(ivalue.split(' ')[1]+' '+kvalue)
-                else:
-                    if cell_dict[ivalue][kvalue]['from'] in recursive_ivalue:
-                        recursive_ivalue[cell_dict[ivalue][kvalue]['from']]['to'].append(ivalue.split(' ')[1]+' '+kvalue)
-                    else:
-                        recursive_ivalue.update({cell_dict[ivalue][kvalue]['from']:{'to':[],'from':[]}})
-                        recursive_ivalue[cell_dict[ivalue][kvalue]['from']]['to'].append(ivalue.split(' ')[1]+' '+kvalue)
-
-                new_cell_dict[ivalue.split(' ')[1]+' '+kvalue].update({'to':output_list})
-
-            else:
-                if cell_dict[ivalue][kvalue]['to'] in nets:
-                    nets[cell_dict[ivalue][kvalue]['to']]['from'].append(ivalue.split(' ')[1]+' '+kvalue)
-                else:
-                    output_pins[cell_dict[ivalue][kvalue]['to']]['from'].append(ivalue.split(' ')[1]+' '+kvalue)
-
-
-                new_cell_dict[ivalue.split(' ')[1]+' '+kvalue].update({'from':input_list})
-
-            macro_info=libAdrress+ivalue.split(' ')[0]+'/1_description.txt'
-            filefile=open(macro_info,'r')
-            strings=filefile.readlines()
-            filefile.close()
-            new_cell_dict[ivalue.split(' ')[1]+' '+kvalue]['cell_type']=strings[0]
-        
-
-
-
-    for ivalue in output_pins:
-        if ivalue in recursive_ivalue:
-            recursive_ivalue[ivalue]['from'].append(output_pins[ivalue]['from'][0])
-
-
-    for ivalue in input_pins:
-        new_cell_dict.update({ivalue:{'direction':'OUTPUT','type':'pin','from':[],'to':[]}})
-        for kdx in range(len(input_pins[ivalue]['to'])):
-            new_cell_dict[ivalue]['to'].append(input_pins[ivalue]['to'][kdx])
-            new_cell_dict[input_pins[ivalue]['to'][kdx]].update({'from':[ivalue]})
-
-
-    for ivalue in output_pins:
-        new_cell_dict.update({ivalue:{'direction':'INPUT','type':'pin','from':[output_pins[ivalue]['from'][0]],'to':[]}})
-        new_cell_dict[output_pins[ivalue]['from'][0]].update({'to':[ivalue]})
-
-        if ivalue in recursive_ivalue:
-            new_cell_dict.update({ivalue:{'direction':'INPUT','type':'pin','from':[recursive_ivalue[ivalue]['from'][0]],'to':[]}})
-            nets.update({ivalue:recursive_ivalue[ivalue]})
-
-
-    for ivalue in nets:
-
-        for kdx in range(len(nets[ivalue]['to'])):
-            new_cell_dict[nets[ivalue]['to'][kdx]].update({'from':[nets[ivalue]['from'][0]]})
-
-        if 'to' in new_cell_dict[nets[ivalue]['from'][0]]:
-            for kdx in range(len(nets[ivalue]['to'])):
-                new_cell_dict[nets[ivalue]['from'][0]]['to'].append(nets[ivalue]['to'][kdx])
-        else:
-            new_cell_dict[nets[ivalue]['from'][0]].update({'to':nets[ivalue]['to']})
-
     
-    for ivalue in new_cell_dict:
-        will_del_connect=list()
-        if new_cell_dict[ivalue]['type']=='cell':
-            if new_cell_dict[ivalue]['cell_type']=='MACRO' and new_cell_dict[ivalue]['direction']=='OUTPUT':
-                df_table=pd.read_csv(libAdrress+new_cell_dict[ivalue]['macroID']+'/3_output_'+ivalue.split(' ')[1]+'/0_info.tsv',sep='\t')
 
-                if 'unateness : complex' in list(df_table[ivalue.split(' ')[1]])[2]:
-                    will_del_connect=copy.deepcopy(new_cell_dict[ivalue]['from'])
-                    new_cell_dict[ivalue]['from']=[]
-                    for kvalue in will_del_connect:
-                        if ivalue in new_cell_dict[kvalue]['to']:
-                            new_cell_dict[kvalue]['to'].remove(ivalue)
+    for ivalue in new_cell_new_dict:
+        if new_cell_new_dict[ivalue]['type']=='cell':
+            
+            input_dict=new_cell_new_dict[ivalue]['input']
+            for kvalue in input_dict:
+                if input_dict[kvalue]['from'] in new_cell_new_dict and new_cell_new_dict[input_dict[kvalue]['from']]['pin_direction']=='input':
+                    new_cell_new_dict[input_dict[kvalue]['from']]['to'].append(ivalue+' '+kvalue)
+
+                elif input_dict[kvalue]['from'] in wire_dict and input_dict[kvalue]['from'] not in recursive_ivalue:
+                    wire_dict[input_dict[kvalue]['from']]['to'].append(ivalue+' '+kvalue)
+            
+                else:
+                    if input_dict[kvalue]['from'] not in wire_dict:
+                        wire_dict.update({input_dict[kvalue]['from']:{'to':[],'from':[]}})
+                    if input_dict[kvalue]['from'] not in recursive_ivalue:
+                        recursive_ivalue.update({input_dict[kvalue]['from']:{'to':[],'from':[]}})
+                    wire_dict[input_dict[kvalue]['from']]['to'].append(ivalue+' '+kvalue)
+                    recursive_ivalue[input_dict[kvalue]['from']]['to'].append(ivalue+' '+kvalue)
+            input_dict=dict()
+            
+            
+            output_dict=new_cell_new_dict[ivalue]['output']
+            for kvalue in output_dict:
+                if output_dict[kvalue]['to'][0] in new_cell_new_dict and new_cell_new_dict[output_dict[kvalue]['to'][0]]['pin_direction']=='output':
+                    new_cell_new_dict[output_dict[kvalue]['to'][0]]['from'].append(ivalue+' '+kvalue)
+
+                elif output_dict[kvalue]['to'][0] in wire_dict:
+                    wire_dict[output_dict[kvalue]['to'][0]]['from'].append(ivalue+' '+kvalue)
+            output_dict=dict()
+            
+
+    for ivalue in recursive_ivalue:
+        for kvalue in recursive_ivalue[ivalue]['to']:
+            if kvalue not in new_cell_new_dict[new_cell_new_dict[ivalue]['from'][0].split(' ')[0]]['output'][new_cell_new_dict[ivalue]['from'][0].split(' ')[1]]['to']:
+                new_cell_new_dict[new_cell_new_dict[ivalue]['from'][0].split(' ')[0]]['output'][new_cell_new_dict[ivalue]['from'][0].split(' ')[1]]['to'].append(kvalue)
+            if new_cell_new_dict[ivalue]['from'][0] not in new_cell_new_dict[kvalue.split(' ')[0]]['input'][kvalue.split(' ')[1]]['from']:
+                new_cell_new_dict[kvalue.split(' ')[0]]['input'][kvalue.split(' ')[1]]['from']=new_cell_new_dict[ivalue]['from'][0]
+        del wire_dict[ivalue]
+    ##print(json.dumps(recursive_ivalue,indent=4))
+    recursive_ivalue=dict()
 
 
-    return new_cell_dict     
+
+    for ivalue in wire_dict:
+        '''print(ivalue)
+        print(wire_dict[ivalue])
+        print()'''
+        output_one=wire_dict[ivalue]['from'][0].split(' ')
+        input_list=wire_dict[ivalue]['to']
+        new_cell_new_dict[output_one[0]]['output'][output_one[1]]['to']=input_list
+        for kvalue in input_list:
+            input_one=kvalue.split(' ')
+            new_cell_new_dict[input_one[0]]['input'][input_one[1]]['from']=wire_dict[ivalue]['from'][0]
+    wire_dict=dict()
+    
+
+
+    for ivalue in new_cell_new_dict:
+        if new_cell_new_dict[ivalue]['type']=='cell':
+            if new_cell_new_dict[ivalue]['description']=='Combinational cell' or new_cell_new_dict[ivalue]['description']=='Pos.edge D-Flip-Flop':
+                for kvalue in new_cell_new_dict[ivalue]['output']:
+                    temp_wire_cap_fall=float()
+                    temp_wire_cap_rise=float()
+                    for jvalue in new_cell_new_dict[ivalue]['output'][kvalue]['to']:
+                        one_input=jvalue.split(' ')
+                        if new_cell_new_dict[one_input[0]]['type']=='cell':
+                            temp_wire_cap_fall=temp_wire_cap_fall+lib_file[new_cell_new_dict[one_input[0]]['macroID']]['input'][one_input[1]]['fall_capacitance']
+                            temp_wire_cap_rise=temp_wire_cap_rise+lib_file[new_cell_new_dict[one_input[0]]['macroID']]['input'][one_input[1]]['rise_capacitance']
+                        else: ####################################################################################################### sdc 파일
+                            if sys.argv[1]==str(1) or sys.argv[1]==str(2):
+                                temp_wire_cap_fall=temp_wire_cap_fall+0
+                                temp_wire_cap_rise=temp_wire_cap_rise+0
+                            elif sys.argv[1]==str(3):
+                                temp_wire_cap_fall=temp_wire_cap_fall+4
+                                temp_wire_cap_rise=temp_wire_cap_rise+4
+
+                    new_cell_new_dict[ivalue]['output'][kvalue].update({'load_cap_fall':temp_wire_cap_fall})
+                    new_cell_new_dict[ivalue]['output'][kvalue].update({'load_cap_rise':temp_wire_cap_rise})
+
+
+    for ivalue in lib_file:
+        if 'input' in lib_file[ivalue]:
+            del lib_file[ivalue]['input']
+
+    return [new_cell_new_dict,lib_file]
 
 
 
@@ -165,189 +145,207 @@ def get_each_cell(file,libAdrress):
 
 def get_unconnect(nets,lib):
     clk_groups=dict()
-    group_of_clk=list()
-    ck_port_group=list()
+    ck_port_group=dict()
 
     for ivalue in nets:
         if nets[ivalue]['type']=='cell':
-            if nets[ivalue]['cell_type']=='Pos.edge D-Flip-Flop':
-                if nets[ivalue]['direction']=='OUTPUT':
-                    nets[ivalue]['from']=[]
-                    df_output=pd.read_csv(lib+nets[ivalue]['macroID']+'/3_output_'+ivalue.split(' ')[1]+'/0_info.tsv',sep='\t')
-                    conditionlist=list(df_output[ivalue.split(' ')[1]])
-                    for jdx in range(len(conditionlist)):
-                        if 'unateness : non_unate' in conditionlist[jdx]:
-                            if conditionlist[jdx].split('related_pin : ')[1].split(', unateness')[0] not in ck_port_group:
-                                ck_port_group.append(conditionlist[jdx].split('related_pin : ')[1].split(', unateness')[0])
-
+            if nets[ivalue]['description']=='Pos.edge D-Flip-Flop':
+                for kvalue in nets[ivalue]['output']:
+                    
+                    for jvalue in lib[nets[ivalue]['macroID']]['output'][kvalue]['conditionlist']:  
+                        if nets[ivalue]['macroID'] not in ck_port_group:
+                            ck_port_group.update({nets[ivalue]['macroID']:[]})
+                        if "unateness : non_unate" in jvalue:
+                            if jvalue.split('related_pin : ')[1].split(', unateness')[0].strip() not in ck_port_group[nets[ivalue]['macroID']]:
+                                ck_port_group[nets[ivalue]['macroID']].append(jvalue.split('related_pin : ')[1].split(', unateness')[0].strip())
 
     for ivalue in nets:
         if nets[ivalue]['type']=='cell':
-            if nets[ivalue]['cell_type']=='Pos.edge D-Flip-Flop':
-                if nets[ivalue]['direction']=='INPUT':
-                    nets[ivalue]['to']=[]
-                    if ivalue.split(' ')[1] in ck_port_group:
-                        group_of_clk.append(ivalue)
-                        checking_clk=nets[ivalue]['from'][0]
-                        while len(nets[checking_clk]['from'])!=0:
-                            if checking_clk not in group_of_clk:
-                                group_of_clk.append(checking_clk)
-                            input__checking=nets[checking_clk]['from'][0]
-                            if input__checking not in group_of_clk:
-                                group_of_clk.append(input__checking)
-                            checking_clk=nets[input__checking]['from'][0]
-                        if checking_clk not in group_of_clk:
-                            group_of_clk.append(checking_clk)
+            if nets[ivalue]['description']=='Pos.edge D-Flip-Flop':
+                clk_groups.update({ivalue:{'macroID':nets[ivalue]['macroID'],'input':{},'output':{},'type':'cell','description':'Pos.edge D-Flip-Flop'}})
+                for clk in nets[ivalue]['input']:
+                    if clk in ck_port_group[nets[ivalue]['macroID']]:
+                        clk_groups[ivalue]['input'].update({clk:nets[ivalue]['input'][clk]})
+
+    
+    kkk=int()
+    temp_clk_group=list()
+    for ivalue in clk_groups:
+        kkk=kkk+1
+        temp_clk=str()
+        for kvalue in clk_groups[ivalue]['input']:
+            del nets[ivalue]['input'][kvalue]
+            temp_clk=kvalue
+        checking_cell_with_port=clk_groups[ivalue]['input'][temp_clk]['from']
+
+        if ' ' in checking_cell_with_port:
+            checking_cell_with_port=checking_cell_with_port.split(' ')[0]
+
+        while True:
+            if checking_cell_with_port not in temp_clk_group:
+                temp_clk_group.append(checking_cell_with_port)
+            if nets[checking_cell_with_port]['type']=='pin':
+                break
+            temp_input=str()
+            for tvalue in nets[checking_cell_with_port]['input']:
+                temp_input=tvalue
+            if ' ' in nets[checking_cell_with_port]['input'][temp_input]['from']:
+                checking_cell_with_port=nets[checking_cell_with_port]['input'][temp_input]['from'].split(' ')[0]
+            else:
+                checking_cell_with_port=nets[checking_cell_with_port]['input'][temp_input]['from']
 
 
-
-            elif nets[ivalue]['cell_type']=='MACRO':
-                if nets[ivalue]['direction']=='OUTPUT':
-
-                    nets[ivalue]['from']=[]
-                else:
-                    nets[ivalue]['to']=[]
-
-    for idx in range(len(group_of_clk)):
-        clk_groups.update({group_of_clk[idx]:nets[group_of_clk[idx]]})
-        del nets[group_of_clk[idx]]
+    for idx in range(len(temp_clk_group)):
+        clk_groups.update({temp_clk_group[idx]:nets[temp_clk_group[idx]]})
+        del nets[temp_clk_group[idx]]
     return [clk_groups,nets]
 
 
 
 ################################ cycle이 있는지 확인하는 함수 필요
-'''def checking_input_list_new(All,dict_dict,input_one):
-    if input_one in dict_dict:
-        print()
-        print('비상비상비상_______사이클_존재_______비상비상비상')
-        print(dict_dict)
-        print('비상비상비상_______사이클_존재_______비상비상비상')
-        print()
-
-        return 0
-    
-    temp_dict=dict()
-    temp_dict.update({input_one:{}})
-
-    for ivalue in All[input_one]['to']:
-        temp_dict[input_one].update({ivalue:[]})
-        for kvalue in All[ivalue]['to']:
-
-            if len(All[kvalue]['to'])!=0:
-                temp_dict[input_one][ivalue].append(kvalue)
-
-        if len(temp_dict[input_one][ivalue])==0:
-            del temp_dict[input_one][ivalue]
-
-    if len(temp_dict[input_one])==0:
-        temp_dict=dict()
-
-        checking_input=copy.deepcopy(input_one)
-        temptemp=copy.deepcopy(dict_dict)
-
-        for idx in range(len(temptemp)):
-            for ivalue in temptemp:
-                
-                if ivalue in dict_dict:
-
-                    for kvalue in temptemp[ivalue]:
-
-                        if kvalue in dict_dict[ivalue]:
-
-                            for jvalue in temptemp[ivalue][kvalue]:
-
-                                if jvalue in dict_dict[ivalue][kvalue]:
-
-                                    if jvalue==checking_input:
-                                        dict_dict[ivalue][kvalue].remove(jvalue)
-                                
-                            if len(dict_dict[ivalue][kvalue])==0:
-                                del dict_dict[ivalue][kvalue]
-                    
-                    if len(dict_dict[ivalue])==0:
-                        checking_input=ivalue
-                        del dict_dict[ivalue]
-    
-    else:
-        remain_list=list()
-        for ivalue in temp_dict[input_one]:
-            for kvalue in temp_dict[input_one][ivalue]:
-                remain_list.append(kvalue)
-        
-        kkk=int()
-        for ivalue in remain_list:
-            kkk=kkk+1
-            for kvalue in dict_dict:
-                if ivalue.split(' ')[0]==kvalue.split(' ')[0]:
+def checking_input_list_new(All,dict_dict,cell_one):
+    if All[cell_one]['macroID']=='DFF_X1':
+        return dict_dict
+    for ivalue in dict_dict[cell_one]['output']:
+        for kvalue in dict_dict[cell_one]['output'][ivalue]['to']:
+            if ' ' not in kvalue:
+                continue
+            if kvalue.split(' ')[0] not in dict_dict:
+                dict_dict.update({kvalue.split(' ')[0]:{'input':{},'output':{},'macroID':All[kvalue.split(' ')[0]]['macroID']}})
+                dict_dict[kvalue.split(' ')[0]]['input'].update({kvalue.split(' ')[1]:All[kvalue.split(' ')[0]]['input'][kvalue.split(' ')[1]]})
+            
+            else:
+                if kvalue.split(' ')[1] in dict_dict[kvalue.split(' ')[0]]['input']:
+                    for kkkvalue in dict_dict:
+                        print(kkkvalue)
+                        print(dict_dict[kkkvalue])
+                        print()
                     print()
-                    print('비상비상비상_______사이클_존재_______비상비상비상')
-                    print(dict_dict)
-                    print('비상비상비상_______사이클_존재_______비상비상비상')
+                    print('tpmglwsn1!!!!!')
+                    print(kvalue.split(' ')[0]+' '+kvalue.split(' ')[1])
                     print()
-                    return 0
+                    print(cell_one)
+                    print(All[cell_one])
+                    return 'break'
+                else:
+                    dict_dict[kvalue.split(' ')[0]]['input'].update({kvalue.split(' ')[1]:All[kvalue.split(' ')[0]]['input'][kvalue.split(' ')[1]]})
 
-        if kkk==len(remain_list):
-            dict_dict.update(temp_dict)
-            for idx in range(len(remain_list)):
-                dict_dict=checking_input_list_new(All,dict_dict,remain_list[idx])
+            for jvalue in All[kvalue.split(' ')[0]]['output']:
+                dict_dict[kvalue.split(' ')[0]]['output'].update({jvalue:All[kvalue.split(' ')[0]]['output'][jvalue]})
 
-    return dict_dict'''
+            
+            dict_dict=checking_input_list_new(All,dict_dict,kvalue.split(' ')[0])
+
+
+        return dict_dict
 ################################ cycle이 있는지 확인하는 함수 필요
 
 
 
 
-def get_new_stage_nodes(TAll):
-    All=copy.deepcopy(TAll)
-
+def get_new_stage_nodes(All,lib):
     for ivalue in All:
-        All[ivalue]['stage']=[None,None]
-        if len(All[ivalue]['from'])==0:
-            All[ivalue]['stage']=[0,'OUTPUT']
+        if All[ivalue]['type']=='cell':
+            if All[ivalue]['description']=='Constant cell' or All[ivalue]['description']=='Pos.edge D-Flip-Flop':
+                All[ivalue].update({'stage':0})
+            elif All[ivalue]['description']=='MACRO':
+                for kvalue in All[ivalue]['output']:
+                    if 'unateness : complex' in lib[All[ivalue]['macroID']]['output'][kvalue]['conditionlist'][0]:
+                        All[ivalue]['output'][kvalue].update({'stage':0})
 
+        elif All[ivalue]['type']=='pin':
+            if All[ivalue]['pin_direction']=='output':
+                All[ivalue]['from']=All[ivalue]['from'][0]
 
-    for ivalue in All:
-        if All[ivalue]['stage']==[0,'OUTPUT']:
-            for kdx in range(len(All[ivalue]['to'])):
-                All[All[ivalue]['to'][kdx]]['stage']=[0,'INPUT']
-    
 
     current_stage=1
     while True:
         rrr=int()
-        willget_stage_input=list()
-        
-
         for ivalue in All:
-            if All[ivalue]['stage']==[None,None]:
+            if 'stage' not in All[ivalue]:
+                continue_str=str()
                 rrr=rrr+1
-
-            
-            if (All[ivalue]['direction']=='OUTPUT' and All[ivalue]['stage']==[None,None]):
-                check_number_of_stage=int()
-                for kdx in range(len(All[ivalue]['from'])):
-                    if All[All[ivalue]['from'][kdx]]['stage']==[None, None]:
-                        break
-                    else:
-                        check_number_of_stage=check_number_of_stage+1
-
-                if check_number_of_stage==len(All[ivalue]['from']):
-                    All[ivalue]['stage']=[current_stage,'OUTPUT']
-
-
-                    for kdx in range(len(All[ivalue]['to'])):
-                        willget_stage_input.append(All[ivalue]['to'][kdx])
+                if All[ivalue]['description']!='MACRO':
+                        for kvalue in All[ivalue]['input']:
+                            temp_from=All[ivalue]['input'][kvalue]['from']
+                            if ' ' in temp_from:
+                                temp_from=temp_from.split(' ')[0]
         
-        for idx in range(len(willget_stage_input)):
-                All[willget_stage_input[idx]]['stage']=[current_stage,'INPUT']
+                            if 'stage' in All[temp_from] and All[temp_from]['type']=='pin':
+                                if All[temp_from]['stage']<current_stage:
+                                    continue
+                                else:
+                                    continue_str='continue'
+                                    break
 
+                            elif 'stage' in All[temp_from] and All[temp_from]['description']!='MACRO':
+                                if All[temp_from]['stage']<current_stage:
+                                    continue
+                                else:
+                                    continue_str='continue'
+                                    break
+                            
+                            elif 'stage' in All[temp_from]['output'][All[ivalue]['input'][kvalue]['from'].split(' ')[1]] and All[temp_from]['description']=='MACRO':
+                                if All[temp_from]['output'][All[ivalue]['input'][kvalue]['from'].split(' ')[1]]['stage']<current_stage:
+                                    continue
+                                else:
+                                    continue_str='continue'
+                                    break
+                            
+                            else:
+                                continue_str='continue'
+                                break
+
+                        if continue_str=='continue':
+                            continue
+
+                        else:
+                            All[ivalue].update({'stage':current_stage})
+
+                else:
+                    for kvalue in All[ivalue]['output']:
+                        if 'stage' not in All[ivalue]['output'][kvalue]:
+                            related_pin=lib[All[ivalue]['macroID']]['output'][kvalue]['conditionlist'][0].split('related_pin : ')[1].split(', unateness :')[0]
+                            from_related=All[ivalue]['input'][related_pin]['from']
+
+                            if ' ' in from_related:
+                                from_related=from_related.split(' ')[0]
+
+
+                            if 'stage' in All[from_related] and All[from_related]['type']=='pin':
+                                if All[from_related]['stage']==current_stage-1:
+                                    All[ivalue]['output'][kvalue].update({'stage':current_stage})
+                                else:
+                                    continue_str='continue'
+                                    continue
+
+                            elif 'stage' in All[from_related] and All[from_related]['description']!='MACRO':
+                                if All[from_related]['stage']==current_stage-1:
+                                    All[ivalue]['output'][kvalue].update({'stage':current_stage})
+                                else:
+                                    continue_str='continue'
+                                    continue
+                            elif 'stage' in All[from_related]['output'][All[ivalue]['input'][related_pin]['from'].split(' ')[1]] and All[from_related]['description']=='MACRO':
+                                if All[from_related]['output'][All[ivalue]['input'][related_pin]['from'].split(' ')[1]]['stage']==current_stage-1:
+                                    All[ivalue]['output'][kvalue].update({'stage':current_stage})
+                                else:
+                                    continue_str='continue'
+                                    continue
+
+                            else:
+                                continue_str='continue'
+
+                    if continue_str=='continue':
+                        continue
+                    else:
+                        All[ivalue].update({'stage':0})
         if rrr==0:
             break
-
+        
         else:
             current_stage=current_stage+1
             continue
-
+        
     return All
 
 
@@ -355,29 +353,51 @@ def get_new_stage_nodes(TAll):
 
 
 
-if __name__ == "__main__":
-    where_the_verilog='../data/deflef_to_graph_and_verilog/verilog/'+sys.argv[1]
-    where_the_lib='../data/deflef_to_graph_and_verilog/libs/'+sys.argv[2].split('.lib')[0]+'/'
 
+if __name__ == "__main__":
+    ##os.chdir('Documents/PNR/timing/source/')
+
+    argv1='scratch_detailed_temp.v'
+    argv2='OPENSTA_example1_slow.lib'
+    if sys.argv[1]==str(1):
+        argv1='gcd.v'
+        argv2='OPENSTA_example1_slow.lib'
+    elif sys.argv[1]==str(2):
+        argv1='scratch_detailed.v'
+        argv2='OPENSTA_example1_slow.lib'
+    elif sys.argv[1]==str(3):
+        argv1='superblue16.v'
+        argv2='superblue16_Late.lib'
+
+    where_the_verilog='../data/deflef_to_graph_and_verilog/verilog/'+argv1
+    where_the_lib='../data/deflef_to_graph_and_verilog/libs/'+argv2.split('.lib')[0]+'/'
+    liibb_file='../data/deflef_to_graph_and_verilog/libs/'+argv2.split('.lib')[0]+'/dictionary_of_lib.json'
+    without_input_lib=liibb_file.split('.json')[0]+'_without_input.json'
     where_the_hypergraph='../data/deflef_to_graph_and_verilog/hypergraph/'
 
-    directory_name=where_the_verilog.split('/')[-1].split('.v')[0]+'_'+sys.argv[2].split('.lib')[0]
+    directory_name=where_the_verilog.split('/')[-1].split('.v')[0]+'_'+argv2.split('.lib')[0]
 
 
-    file_save_address_stage_without_clk=where_the_hypergraph+directory_name+'/stage_without_clk.pickle'
-    file_save_address_stage_with_clk=where_the_hypergraph+directory_name+'/stage_with_clk.pickle'
+    file_save_address_stage_without_clk=where_the_hypergraph+directory_name+'/stage_without_clk(temp).pickle'
+    file_save_address_stage_with_clk=where_the_hypergraph+directory_name+'/stage_with_clk(temp).pickle'
+
+    with open(liibb_file, 'r') as file:
+        lib_file = json.load(file)
+    file.close()
 
     net_info=dict()
     unconnect_graph=list()
+    net_infgo=get_each_cell(where_the_verilog,lib_file)
+    net_info=net_infgo[0]
+    ##print(json.dumps(net_info,indent=4))
+    ##print()
+    new_lib=net_infgo[1]
 
-    start = time.time()
-    print('start')
-    net_info=get_each_cell(where_the_verilog,where_the_lib)
-    print('net_info_end')
-    unconnect_graph=get_unconnect(net_info,where_the_lib)
-    print('unconnect_graph_end')
-    stage_without_clk=get_new_stage_nodes(unconnect_graph[1])
-    stage_with_clk=get_new_stage_nodes(unconnect_graph[0])
+
+    unconnect_graph=get_unconnect(net_info,new_lib)
+
+    stage_without_clk=get_new_stage_nodes(unconnect_graph[1],new_lib)
+    stage_with_clk=get_new_stage_nodes(unconnect_graph[0],new_lib)
 
     if directory_name not in os.listdir(where_the_hypergraph):
         os.mkdir(where_the_hypergraph+directory_name)
@@ -390,4 +410,7 @@ if __name__ == "__main__":
         pickle.dump(stage_with_clk, fw)
     fw.close()
 
-    print("time :", time.time() - start)
+    with open(without_input_lib, 'w') as file:
+        json.dump(new_lib,file,indent=4)
+    file.close()
+
