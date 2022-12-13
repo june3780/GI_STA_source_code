@@ -3,8 +3,7 @@ import os
 import shutil
 import sys
 import copy
-
-
+import time
 
 
 def get_file_and_make_directory(wiremode,file_type):
@@ -13,32 +12,35 @@ def get_file_and_make_directory(wiremode,file_type):
     while True:
         defdef=str()
         defdef=get_limitation(file_type,idx)
-
+        start=time.time()
         if defdef=='continue':
             idx=idx+1
             continue
-
+    
         if defdef=='break':
             break
-
-        '''if wiremode=='star':
+        defdef='gcd.def'
+        if wiremode=='wire_load':
             print()
             print('revising')
             print()
-            os.system('python3 0_revise_checking.py '+defdef)
+            ##os.system('python3 0_revise_checking.py '+defdef)
             print()
             print('parsing')
             print()
-            os.system('python3 1_for_check.py '+defdef)
+            ##os.system('python3 1_for_check.py '+defdef)
         print()
         print('calculating')
-        print()'''
-        os.system('python3 CTO.py '+defdef+' '+wiremode+' '+file_type)
+        print()
+        os.system('python3 2_for_modifying_graph.py '+defdef+' '+wiremode+' '+file_type)
 
         print(defdef,file_type,wiremode)
         ##print()
         idx=idx+1
-
+        print()
+        print('시간 :',time.time()-start)
+        if idx>=1:
+            break
     
 
     return 0
@@ -293,7 +295,7 @@ if __name__ == "__main__":
 
     ##deflist=['Rbank2']
 
-    wire_mod=['star']
+    wire_mod=['wire_load']
 
     if if_not_zero==str(0):
         for kkiiddxx in range(len(deflist)):
@@ -306,7 +308,11 @@ if __name__ == "__main__":
             for kkiiddxx in range(len(deflist)):
                 print(deflist[kkiiddxx])
                 get_file_and_make_directory(wire_mod[iddx],deflist[kkiiddxx])
-                copy_scratch(wire_mod[iddx],deflist[kkiiddxx])
+                if iddx==0:
+                    break
+            if iddx==0:
+                break
+                ##copy_scratch(wire_mod[iddx],deflist[kkiiddxx])
 
 
 

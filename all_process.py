@@ -11,8 +11,8 @@ def get_all_process(numbers):
 
     ##os.system('python3 get_verilog_file_from_def.py')
     start=time.time()
-    ##os.system('python3 get_lib_directory.py '+str(numbers))
-    ##os.system('python3 get_hypergraph.py '+str(numbers))
+    os.system('python3 get_lib_directory.py '+str(numbers))
+    os.system('python3 get_hypergraph.py '+str(numbers))
     os.system('python3 get_position_by_v.py '+str(numbers))
     print()
     print('시간 :',time.time()-start)
