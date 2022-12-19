@@ -152,18 +152,13 @@ def get_lib_list(file_address):
 
 if __name__ == "__main__":
     ##os.chdir('Documents/PNR/timing/source/')
+    temp_lib=sys.argv[1].split('.lib')[0]
     address_liberty_file='../data/deflef_to_graph_and_verilog/libs/'
-    if sys.argv[1]==str(1) or sys.argv[1]==str(2):
-        address_liberty_file=address_liberty_file+'OPENSTA_example1_slow/'
-    elif sys.argv[1]==str(3):
-        address_liberty_file=address_liberty_file+'superblue16_Late/'
+    address_liberty_file=address_liberty_file+temp_lib+'/'
     dict_of_lib=get_lib_list(address_liberty_file)
 
     saving_lib_address='../data/deflef_to_graph_and_verilog/libs/'
-    if sys.argv[1]==str(1) or sys.argv[1]==str(2):
-        saving_lib_address=saving_lib_address+'OPENSTA_example1_slow/'
-    elif sys.argv[1]==str(3):
-        saving_lib_address=saving_lib_address+'superblue16_Late/'
+    saving_lib_address=saving_lib_address+temp_lib+'/'
     saving_lib_address=saving_lib_address+'dictionary_of_lib.json'
     with open(saving_lib_address,'w') as filee:
         json.dump(dict_of_lib,filee,indent=4)

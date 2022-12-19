@@ -31,8 +31,8 @@ def get_each_cell(file,lib_file):
                 wire_dict.update({checking_str.replace('\n','').split(' ')[1].replace(';',''):{'to':[],'from':[]}})
 
         else:
-            new_cell_new_dict.update({checking_str.replace('\n','').split(' ')[1]:{'macroID':maybe_cell_name_or_input_or_output_or_wire,'input':{},'output':{},'type':'cell','description':lib_file[maybe_cell_name_or_input_or_output_or_wire]['description']}})
 
+            new_cell_new_dict.update({checking_str.replace('\n','').split(' ')[1]:{'macroID':maybe_cell_name_or_input_or_output_or_wire,'input':{},'output':{},'type':'cell','description':lib_file[maybe_cell_name_or_input_or_output_or_wire]['description']}})
             list_of_check=checking_str.split('.')[1:]
             for ddx in range(len(list_of_check)):
                 temp_pin=list_of_check[ddx].split('(')[0]
@@ -46,7 +46,6 @@ def get_each_cell(file,lib_file):
                     new_cell_new_dict[checking_str.replace('\n','').split(' ')[1]]['input'].update({pin_name:{'from':list_of_check[kdx].split('(')[1].split(')')[0]}})
                 else:
                     new_cell_new_dict[checking_str.replace('\n','').split(' ')[1]]['output'].update({pin_name:{'to':[list_of_check[kdx].split('(')[1].split(')')[0]]}})
-
     ff.close()
 
     recursive_ivalue=dict()
@@ -72,7 +71,8 @@ def get_each_cell(file,lib_file):
                     recursive_ivalue[input_dict[kvalue]['from']]['to'].append(ivalue+' '+kvalue)
             input_dict=dict()
             
-            
+    for ivalue in new_cell_new_dict:
+        if new_cell_new_dict[ivalue]['type']=='cell':
             output_dict=new_cell_new_dict[ivalue]['output']
             for kvalue in output_dict:
                 if output_dict[kvalue]['to'][0] in new_cell_new_dict and new_cell_new_dict[output_dict[kvalue]['to'][0]]['pin_direction']=='output':
@@ -96,18 +96,23 @@ def get_each_cell(file,lib_file):
 
 
     for ivalue in wire_dict:
-        '''print(ivalue)
-        print(wire_dict[ivalue])
-        print()'''
-        output_one=wire_dict[ivalue]['from'][0].split(' ')
-        input_list=wire_dict[ivalue]['to']
-        new_cell_new_dict[output_one[0]]['output'][output_one[1]]['to']=input_list
-        for kvalue in input_list:
-            input_one=kvalue.split(' ')
-            new_cell_new_dict[input_one[0]]['input'][input_one[1]]['from']=wire_dict[ivalue]['from'][0]
-    wire_dict=dict()
-    
+        output_one=wire_dict[ivalue]['from'][0]
+        temp_one=str()
+        if ' ' in output_one:
+            temp_one=output_one.split(' ')[1]
+            output_one=output_one.split(' ')[0]
 
+        input_list=wire_dict[ivalue]['to']
+        new_cell_new_dict[output_one]['output'][temp_one]['to']=input_list
+        for kvalue in input_list:
+            temp_input_port=str()
+            input_one=kvalue
+            if ' ' in input_one:
+                temp_input_port=input_one.split(' ')[1]
+                input_one=input_one.split(' ')[0]
+            new_cell_new_dict[input_one]['input'][temp_input_port]['from']=wire_dict[ivalue]['from'][0]
+
+    wire_dict=dict()
 
     for ivalue in new_cell_new_dict:
         if new_cell_new_dict[ivalue]['type']=='cell':
@@ -116,10 +121,17 @@ def get_each_cell(file,lib_file):
                     temp_wire_cap_fall=float()
                     temp_wire_cap_rise=float()
                     for jvalue in new_cell_new_dict[ivalue]['output'][kvalue]['to']:
-                        one_input=jvalue.split(' ')
-                        if new_cell_new_dict[one_input[0]]['type']=='cell':
-                            temp_wire_cap_fall=temp_wire_cap_fall+lib_file[new_cell_new_dict[one_input[0]]['macroID']]['input'][one_input[1]]['fall_capacitance']
-                            temp_wire_cap_rise=temp_wire_cap_rise+lib_file[new_cell_new_dict[one_input[0]]['macroID']]['input'][one_input[1]]['rise_capacitance']
+                        temp_port=str()
+                        one_input=jvalue
+                        if ' ' in one_input:
+                            temp_port=one_input.split(' ')[1]
+                            one_input=one_input.split(' ')[0]
+                        #print(ivalue)
+                        #print(one_input)
+                        #print()
+                        if new_cell_new_dict[one_input]['type']=='cell':
+                            temp_wire_cap_fall=temp_wire_cap_fall+lib_file[new_cell_new_dict[one_input]['macroID']]['input'][temp_port]['fall_capacitance']
+                            temp_wire_cap_rise=temp_wire_cap_rise+lib_file[new_cell_new_dict[one_input]['macroID']]['input'][temp_port]['rise_capacitance']
                         else: ####################################################################################################### sdc 파일
                             if sys.argv[1]==str(1) or sys.argv[1]==str(2):
                                 temp_wire_cap_fall=temp_wire_cap_fall+0
@@ -130,7 +142,10 @@ def get_each_cell(file,lib_file):
 
                     new_cell_new_dict[ivalue]['output'][kvalue].update({'load_cap_fall':temp_wire_cap_fall})
                     new_cell_new_dict[ivalue]['output'][kvalue].update({'load_cap_rise':temp_wire_cap_rise})
-
+            else:
+                for kvalue in new_cell_new_dict[ivalue]['output']:
+                    new_cell_new_dict[ivalue]['output'][kvalue].update({'load_cap_fall':float(0)})
+                    new_cell_new_dict[ivalue]['output'][kvalue].update({'load_cap_rise':float(0)}) 
 
     for ivalue in lib_file:
         if 'input' in lib_file[ivalue]:
@@ -345,7 +360,86 @@ def get_new_stage_nodes(All,lib):
         else:
             current_stage=current_stage+1
             continue
-        
+########################################################################################## macro 재설정
+    all_macro=dict()
+    for ivalue in All:
+        if All[ivalue]['type']=='cell':
+            if All[ivalue]['description']=='MACRO':
+                if_input_what_stage=dict()
+                stage_dict=dict()
+                input_to_output=dict()
+                all_related_pins=list()
+                for kvalue in All[ivalue]['output']:
+                    if str(All[ivalue]['output'][kvalue]['stage']) not in stage_dict:
+                        stage_dict.update({str(All[ivalue]['output'][kvalue]['stage']):{'input':[],'output':[]}})
+                    if kvalue not in stage_dict[str(All[ivalue]['output'][kvalue]['stage'])]['output']:
+                        stage_dict[str(All[ivalue]['output'][kvalue]['stage'])]['output'].append(kvalue)
+                    related_pin=lib[All[ivalue]['macroID']]['output'][kvalue]['conditionlist'][0].split('related_pin : ')[1].split(', unateness :')[0]
+                    
+
+                    if related_pin !='all':
+                        if related_pin not in stage_dict[str(All[ivalue]['output'][kvalue]['stage'])]['input']:
+                            stage_dict[str(All[ivalue]['output'][kvalue]['stage'])]['input'].append(related_pin)
+                        if related_pin not in all_related_pins:
+                            all_related_pins.append(related_pin)
+                        if_input_what_stage.update({related_pin:str(All[ivalue]['output'][kvalue]['stage'])})
+                    
+                    else:
+                        if str(0) not in stage_dict:
+                            stage_dict.update({str(0):{'input':[],'output':[]}})
+                        if kvalue not in stage_dict[str(0)]['output']:
+                            stage_dict[str(0)]['output'].append(kvalue)
+
+                for kvalue in All[ivalue]['input']:
+                    if kvalue not in all_related_pins:
+                        if str(0) not in stage_dict:
+                            stage_dict.update({str(0):{'input':[],'output':[]}})
+                        if kvalue not in stage_dict[str(0)]['input']:
+                            stage_dict[str(0)]['input'].append(kvalue)
+
+                for stage_number in stage_dict:
+                    for macro_input in stage_dict[stage_number]['input']:
+                        temp_input_from=All[ivalue]['input'][macro_input]['from']
+                        if ' ' in temp_input_from:
+                            temp_input_from=temp_input_from.split(' ')[0]
+                        if '_stage' in temp_input_from:
+                            temp_input_from=temp_input_from.split(' ')[0].split('_stage')[0]
+                        if All[temp_input_from]['type']=='pin':
+                            All[temp_input_from]['to'].remove(ivalue+' '+macro_input)
+                            All[temp_input_from]['to'].append(ivalue+'_stage'+stage_number+' '+macro_input)
+                        else:
+                            All[temp_input_from]['output'][All[ivalue]['input'][macro_input]['from'].split(' ')[1]]['to'].remove(ivalue+' '+macro_input)
+                            All[temp_input_from]['output'][All[ivalue]['input'][macro_input]['from'].split(' ')[1]]['to'].append(ivalue+'_stage'+stage_number+' '+macro_input)
+
+                    for macro_output in stage_dict[stage_number]['output']:
+                            temp_output_to_list=All[ivalue]['output'][macro_output]['to']
+                            for kvalue in temp_output_to_list:
+                                temp_output_to=kvalue
+                                if ' ' in temp_output_to:
+                                    temp_output_to=temp_output_to.split(' ')[0]
+                                
+                                if '_stage' in temp_output_to:
+                                    temp_output_to=temp_output_to.split(' ')[0].split('_stage')[0]
+                                
+                                if All[temp_output_to]['type']=='pin':
+                                    All[temp_output_to]['from']=ivalue+'_stage'+stage_number+' '+macro_output
+                                else:
+                                    All[temp_output_to]['input'][kvalue.split(' ')[1]]['from']=ivalue+'_stage'+stage_number+' '+macro_output
+
+                all_macro.update({ivalue:stage_dict})
+
+
+    for ivalue in all_macro:
+        for kvalue in all_macro[ivalue]:
+            All.update({ivalue+'_stage'+kvalue:{'input':{},'output':{},'macroID':All[ivalue]['macroID'],'description':'MACRO','stage':int(kvalue),'type':'cell'}})
+            for temp_input in all_macro[ivalue][kvalue]['input']:
+                All[ivalue+'_stage'+kvalue]['input'].update({temp_input:All[ivalue]['input'][temp_input]})
+            for temp_output in all_macro[ivalue][kvalue]['output']:
+                All[ivalue+'_stage'+kvalue]['output'].update({temp_output:All[ivalue]['output'][temp_output]})
+        del All[ivalue]
+
+    
+
     return All
 
 
@@ -356,7 +450,7 @@ def get_new_stage_nodes(All,lib):
 
 if __name__ == "__main__":
     ##os.chdir('Documents/PNR/timing/source/')
-
+    ## sys.argv[v, lib]
     argv1='scratch_detailed_temp.v'
     argv2='OPENSTA_example1_slow.lib'
     if sys.argv[1]==str(1):
@@ -368,6 +462,8 @@ if __name__ == "__main__":
     elif sys.argv[1]==str(3):
         argv1='superblue16.v'
         argv2='superblue16_Late.lib'
+    argv1=sys.argv[1]
+    argv2=sys.argv[2]
 
     where_the_verilog='../data/deflef_to_graph_and_verilog/verilog/'+argv1
     where_the_lib='../data/deflef_to_graph_and_verilog/libs/'+argv2.split('.lib')[0]+'/'
